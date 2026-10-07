@@ -17,7 +17,7 @@ from .serializers import FamilyMemberSerializer, OtpRequestSerializer, OtpVerify
 class OtpRequestView(APIView):
     authentication_classes: list = []
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "otp"
+    throttle_scope = "otp_request"
 
     def post(self, request):
         s = OtpRequestSerializer(data=request.data)
@@ -40,7 +40,7 @@ class OtpRequestView(APIView):
 class OtpVerifyView(APIView):
     authentication_classes: list = []
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "otp"
+    throttle_scope = "otp_verify"
 
     def post(self, request):
         s = OtpVerifySerializer(data=request.data)

@@ -1,6 +1,7 @@
 """Payment gateway adapters. Amounts are in Toman (IRT)."""
 import uuid
 from dataclasses import dataclass
+from urllib.parse import urlencode
 
 import requests
 from django.conf import settings
@@ -25,7 +26,9 @@ class FakeGateway:
 
     def request(self, amount, description, callback_url, mobile=""):
         authority = f"FAKE-{uuid.uuid4().hex[:16]}"
-        return authority, f"{settings.SITE_URL}/payment/fake-gateway?authority={authority}&amount={amount}"
+        relative_cb = callback_url.removeprefix(settings.API_URL)
+        query = urlencode({"authority": authority, "amount": amount, "callback": relative_cb})
+        return authority, f"{settings.SITE_URL}/payment/fake-gateway?{query}"
 
     def verify(self, authority, amount):
         return VerifyResult(ok=True, ref_id=uuid.uuid4().hex[:10].upper(), card_pan="6037********1234")

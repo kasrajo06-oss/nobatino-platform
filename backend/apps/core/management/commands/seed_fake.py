@@ -123,7 +123,7 @@ class Command(BaseCommand):
         tests = list(LabTest.objects.all())
         specialties = list(Specialty.objects.filter(parent__isnull=True))
         centers = []
-        for i in range(n):
+        for _ in range(n):
             t = random.choice(types)
             city = self.pick_city()
             is_lab = t == CenterType.LABORATORY
@@ -211,7 +211,7 @@ class Command(BaseCommand):
             )
             doc.specialties.set([spec] + ([sub] if sub else []))
             doc.save()  # rebuild search_text with specialties
-            for k in range(1 if random.random() < 0.75 else 2):
+            for _ in range(1 if random.random() < 0.75 else 2):
                 center = random.choice(clinic_like) if clinic_like and random.random() < 0.25 else None
                 city = center.city if center else self.pick_city()
                 office = Office.objects.create(

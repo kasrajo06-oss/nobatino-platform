@@ -14,6 +14,7 @@ from apps.core import search
 from apps.doctors import panel as doctor_panel
 from apps.doctors import views as doctors
 from apps.geo import views as geo
+from apps.lab import views as lab
 from apps.ops import views as ops
 from apps.payments import views as payments
 from apps.reviews import views as reviews
@@ -39,6 +40,7 @@ public.register("specialties", catalog.SpecialtyViewSet, basename="specialty")
 public.register("degrees", catalog.DegreeViewSet, basename="degree")
 public.register("conditions", catalog.ConditionViewSet, basename="condition")
 public.register("insurances", catalog.InsuranceViewSet, basename="insurance")
+public.register("lab-tests", lab.LabTestViewSet, basename="lab-test")
 public.register("doctors", doctors.DoctorViewSet, basename="doctor")
 public.register("centers", centers.CenterViewSet, basename="center")
 public.register("pages", cms.PageViewSet, basename="page")

@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-vazirmatn), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #effcfc;
+  --color-brand-100: #d6f5f6;
+  --color-brand-200: #b1eaee;
+  --color-brand-300: #7bd9e0;
+  --color-brand-400: #3ebfcb;
+  --color-brand-500: #22a2b0;
+  --color-brand-600: #1d8394;
+  --color-brand-700: #1d6978;
+  --color-brand-800: #1f5663;
+  --color-brand-900: #1e4954;
+
+  --color-ink: #0f172a;
+  --color-muted: #64748b;
+  --color-line: #e2e8f0;
+  --color-canvas: #f6f8fa;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-feature-settings: "ss01";
+}
+
+@utility container-page {
+  @apply mx-auto w-full max-w-7xl px-4 sm:px-6;
+}
+@utility card {
+  @apply rounded-2xl border border-line bg-white;
+}
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+}
+@utility btn-primary {
+  @apply btn bg-brand-600 text-white hover:bg-brand-700;
+}
+@utility btn-outline {
+  @apply btn border border-brand-600 text-brand-700 hover:bg-brand-50;
+}
+@utility btn-ghost {
+  @apply btn text-slate-600 hover:bg-slate-100;
+}
+@utility btn-danger {
+  @apply btn bg-rose-600 text-white hover:bg-rose-700;
+}
+@utility input {
+  @apply w-full rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100;
+}
+@utility label {
+  @apply mb-1.5 block text-sm font-medium text-slate-700;
+}
+@utility chip {
+  @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset;
+}
+@utility ltr {
+  direction: ltr;
+  unicode-bidi: plaintext;
+}
