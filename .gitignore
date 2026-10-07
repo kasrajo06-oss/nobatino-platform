@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.pyc
+backend/.venv/
+backend/db.sqlite3
+backend/media/
+backend/staticfiles/
+backend/.env
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+frontend/test-results/
+frontend/playwright-report/
+*.tsbuildinfo
+next-env.d.ts
+
+# Misc
+.env
+.DS_Store
+Thumbs.db

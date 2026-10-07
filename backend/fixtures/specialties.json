@@ -1,0 +1,135 @@
+{
+  "_comment": "Top-level specialties in the order of the reference site's most-visited list, followed by others. children = sub-specialties / fellowships.",
+  "degrees": [
+    {"name": "فوق تخصص", "slug": "subspecialist"},
+    {"name": "فلوشیپ", "slug": "fellowship"},
+    {"name": "متخصص", "slug": "specialist"},
+    {"name": "پزشک عمومی", "slug": "gp"},
+    {"name": "دندانپزشک", "slug": "dentist"},
+    {"name": "دکترای تخصصی (PhD)", "slug": "phd"},
+    {"name": "کارشناسی ارشد", "slug": "msc"},
+    {"name": "کارشناس", "slug": "bsc"},
+    {"name": "داروساز", "slug": "pharmacist"}
+  ],
+  "specialties": [
+    {"name": "زنان و زایمان", "title": "متخصص زنان و زایمان", "slug": "gynecology", "icon": "baby", "popular": true, "children": [
+      {"name": "نازایی و IVF", "title": "فلوشیپ نازایی و IVF", "slug": "infertility-ivf"},
+      {"name": "پریناتولوژی", "title": "فلوشیپ پریناتولوژی (حاملگی پرخطر)", "slug": "perinatology"},
+      {"name": "انکولوژی زنان", "title": "فوق تخصص انکولوژی زنان", "slug": "gynecologic-oncology"},
+      {"name": "لاپاراسکوپی زنان", "title": "فلوشیپ لاپاراسکوپی زنان", "slug": "gynecologic-laparoscopy"},
+      {"name": "اوروژنیکولوژی", "title": "فلوشیپ اوروژنیکولوژی", "slug": "urogynecology"}
+    ]},
+    {"name": "اورولوژی", "title": "متخصص کلیه و مجاری ادراری (اورولوژی)", "slug": "urology", "icon": "kidney", "popular": true, "children": [
+      {"name": "آندرولوژی", "title": "فلوشیپ آندرولوژی", "slug": "andrology"},
+      {"name": "اورولوژی کودکان", "title": "فلوشیپ اورولوژی کودکان", "slug": "pediatric-urology"},
+      {"name": "اندویورولوژی", "title": "فلوشیپ اندویورولوژی", "slug": "endourology"}
+    ]},
+    {"name": "ارتوپدی", "title": "متخصص ارتوپدی", "slug": "orthopedics", "icon": "bone", "popular": true, "children": [
+      {"name": "جراحی ستون فقرات", "title": "فلوشیپ جراحی ستون فقرات", "slug": "spine-surgery"},
+      {"name": "جراحی دست", "title": "فلوشیپ جراحی دست", "slug": "hand-surgery"},
+      {"name": "جراحی زانو و آرتروسکوپی", "title": "فلوشیپ جراحی زانو", "slug": "knee-surgery"},
+      {"name": "جراحی شانه", "title": "فلوشیپ جراحی شانه", "slug": "shoulder-surgery"},
+      {"name": "ارتوپدی کودکان", "title": "فلوشیپ ارتوپدی کودکان", "slug": "pediatric-orthopedics"},
+      {"name": "ارتوپدی ورزشی", "title": "فلوشیپ آسیب‌های ورزشی", "slug": "sports-orthopedics"}
+    ]},
+    {"name": "گوارش و کبد", "title": "فوق تخصص گوارش و کبد", "slug": "gastroenterology", "icon": "stomach", "popular": true, "children": []},
+    {"name": "مغز و اعصاب", "title": "متخصص مغز و اعصاب (نورولوژی)", "slug": "neurology", "icon": "brain", "popular": true, "children": [
+      {"name": "صرع", "title": "فلوشیپ صرع", "slug": "epilepsy"},
+      {"name": "سکته مغزی", "title": "فلوشیپ سکته مغزی", "slug": "stroke"},
+      {"name": "ام‌اس", "title": "فلوشیپ ام‌اس", "slug": "multiple-sclerosis"},
+      {"name": "نوار عصب و عضله", "title": "فلوشیپ نوار عصب و عضله", "slug": "emg-ncv"}
+    ]},
+    {"name": "روانشناسی", "title": "روانشناس", "slug": "psychology", "icon": "mind", "popular": true, "children": [
+      {"name": "روانشناسی بالینی", "title": "روانشناس بالینی", "slug": "clinical-psychology"},
+      {"name": "روانشناسی کودک", "title": "روانشناس کودک و نوجوان", "slug": "child-psychology"},
+      {"name": "مشاوره خانواده و ازدواج", "title": "مشاور خانواده و ازدواج", "slug": "family-counseling"}
+    ]},
+    {"name": "گوش، حلق و بینی", "title": "متخصص گوش، حلق و بینی", "slug": "ent", "icon": "ear", "popular": true, "children": [
+      {"name": "جراحی سر و گردن", "title": "فلوشیپ جراحی سر و گردن", "slug": "head-neck-surgery"},
+      {"name": "جراحی پلاستیک صورت", "title": "فلوشیپ جراحی پلاستیک صورت", "slug": "facial-plastic-surgery"},
+      {"name": "رینولوژی", "title": "فلوشیپ رینولوژی (بینی و سینوس)", "slug": "rhinology"}
+    ]},
+    {"name": "پوست و مو", "title": "متخصص پوست، مو و زیبایی", "slug": "dermatology", "icon": "skin", "popular": true, "children": [
+      {"name": "لیزر و زیبایی پوست", "title": "فلوشیپ لیزر پوست", "slug": "dermatology-laser"},
+      {"name": "پوست کودکان", "title": "فلوشیپ پوست کودکان", "slug": "pediatric-dermatology"}
+    ]},
+    {"name": "داخلی", "title": "متخصص بیماری‌های داخلی", "slug": "internal-medicine", "icon": "stethoscope", "popular": true, "children": []},
+    {"name": "غدد و متابولیسم", "title": "فوق تخصص غدد، دیابت و متابولیسم", "slug": "endocrinology", "icon": "gland", "popular": true, "children": []},
+    {"name": "قلب و عروق", "title": "متخصص قلب و عروق", "slug": "cardiology", "icon": "heart", "popular": true, "children": [
+      {"name": "اینترونشنال کاردیولوژی", "title": "فلوشیپ اینترونشنال کاردیولوژی (آنژیوپلاستی)", "slug": "interventional-cardiology"},
+      {"name": "الکتروفیزیولوژی قلب", "title": "فلوشیپ الکتروفیزیولوژی قلب", "slug": "electrophysiology"},
+      {"name": "اکوکاردیوگرافی", "title": "فلوشیپ اکوکاردیوگرافی", "slug": "echocardiography"},
+      {"name": "نارسایی قلب", "title": "فلوشیپ نارسایی قلب", "slug": "heart-failure"}
+    ]},
+    {"name": "کودکان و نوزادان", "title": "متخصص کودکان و نوزادان", "slug": "pediatrics", "icon": "child", "popular": true, "children": [
+      {"name": "نوزادان", "title": "فوق تخصص نوزادان", "slug": "neonatology"},
+      {"name": "قلب کودکان", "title": "فوق تخصص قلب کودکان", "slug": "pediatric-cardiology"},
+      {"name": "گوارش کودکان", "title": "فوق تخصص گوارش کودکان", "slug": "pediatric-gastroenterology"},
+      {"name": "غدد کودکان", "title": "فوق تخصص غدد کودکان", "slug": "pediatric-endocrinology"},
+      {"name": "مغز و اعصاب کودکان", "title": "فوق تخصص مغز و اعصاب کودکان", "slug": "pediatric-neurology"},
+      {"name": "عفونی کودکان", "title": "فوق تخصص عفونی کودکان", "slug": "pediatric-infectious"},
+      {"name": "ریه کودکان", "title": "فوق تخصص ریه کودکان", "slug": "pediatric-pulmonology"},
+      {"name": "خون و انکولوژی کودکان", "title": "فوق تخصص خون و سرطان کودکان", "slug": "pediatric-hematology-oncology"},
+      {"name": "کلیه کودکان", "title": "فوق تخصص کلیه کودکان", "slug": "pediatric-nephrology"},
+      {"name": "آلرژی و ایمونولوژی کودکان", "title": "فوق تخصص آلرژی و ایمونولوژی", "slug": "allergy-immunology"}
+    ]},
+    {"name": "دندانپزشکی", "title": "دندانپزشک", "slug": "dentistry", "icon": "tooth", "popular": true, "children": [
+      {"name": "ارتودنسی", "title": "متخصص ارتودنسی", "slug": "orthodontics"},
+      {"name": "ایمپلنت", "title": "دندانپزشک ایمپلنت", "slug": "dental-implant"},
+      {"name": "جراحی لثه (پریودانتیکس)", "title": "متخصص جراحی لثه", "slug": "periodontics"},
+      {"name": "درمان ریشه (اندودانتیکس)", "title": "متخصص درمان ریشه", "slug": "endodontics"},
+      {"name": "دندانپزشکی کودکان", "title": "متخصص دندانپزشکی کودکان", "slug": "pediatric-dentistry"},
+      {"name": "جراحی فک و صورت", "title": "متخصص جراحی دهان، فک و صورت", "slug": "oral-maxillofacial-surgery"},
+      {"name": "پروتزهای دندانی", "title": "متخصص پروتزهای دندانی", "slug": "prosthodontics"},
+      {"name": "دندانپزشکی زیبایی", "title": "دندانپزشک زیبایی", "slug": "cosmetic-dentistry"}
+    ]},
+    {"name": "جراحی مغز و اعصاب", "title": "متخصص جراحی مغز و اعصاب", "slug": "neurosurgery", "icon": "brain-surgery", "popular": true, "children": []},
+    {"name": "ریه", "title": "فوق تخصص ریه", "slug": "pulmonology", "icon": "lungs", "popular": true, "children": [
+      {"name": "اختلالات خواب", "title": "فلوشیپ طب خواب", "slug": "sleep-medicine"}
+    ]},
+    {"name": "روانپزشکی", "title": "متخصص اعصاب و روان (روانپزشک)", "slug": "psychiatry", "icon": "psychiatry", "popular": true, "children": [
+      {"name": "روانپزشکی کودک و نوجوان", "title": "فوق تخصص روانپزشکی کودک و نوجوان", "slug": "child-psychiatry"},
+      {"name": "سایکوسوماتیک", "title": "فلوشیپ سایکوسوماتیک", "slug": "psychosomatic"}
+    ]},
+    {"name": "پزشک عمومی", "title": "پزشک عمومی", "slug": "general-practitioner", "icon": "doctor", "popular": true, "children": []},
+    {"name": "تغذیه", "title": "متخصص تغذیه و رژیم درمانی", "slug": "nutrition", "icon": "apple", "popular": true, "children": []},
+    {"name": "جراحی عمومی", "title": "متخصص جراحی عمومی", "slug": "general-surgery", "icon": "scalpel", "popular": true, "children": [
+      {"name": "جراحی لاپاراسکوپی", "title": "فلوشیپ جراحی لاپاراسکوپی", "slug": "laparoscopic-surgery"},
+      {"name": "جراحی چاقی و متابولیک", "title": "فلوشیپ جراحی چاقی", "slug": "bariatric-surgery"},
+      {"name": "جراحی پستان", "title": "فلوشیپ جراحی پستان", "slug": "breast-surgery"},
+      {"name": "جراحی کولورکتال", "title": "فوق تخصص جراحی کولورکتال", "slug": "colorectal-surgery"},
+      {"name": "جراحی توراکس", "title": "فوق تخصص جراحی قفسه سینه", "slug": "thoracic-surgery"},
+      {"name": "جراحی عروق", "title": "فوق تخصص جراحی عروق", "slug": "vascular-surgery"}
+    ]},
+    {"name": "روماتولوژی", "title": "فوق تخصص روماتولوژی", "slug": "rheumatology", "icon": "joint", "popular": true, "children": []},
+    {"name": "انکولوژی", "title": "فوق تخصص خون و سرطان (هماتولوژی و انکولوژی)", "slug": "oncology", "icon": "ribbon", "popular": true, "children": [
+      {"name": "رادیوتراپی", "title": "متخصص رادیوتراپی و انکولوژی", "slug": "radiation-oncology"}
+    ]},
+    {"name": "چشم پزشکی", "title": "متخصص چشم", "slug": "ophthalmology", "icon": "eye", "popular": true, "children": [
+      {"name": "قرنیه", "title": "فلوشیپ قرنیه", "slug": "cornea"},
+      {"name": "شبکیه", "title": "فلوشیپ شبکیه", "slug": "retina"},
+      {"name": "گلوکوم", "title": "فلوشیپ گلوکوم", "slug": "glaucoma"},
+      {"name": "استرابیسم و چشم کودکان", "title": "فلوشیپ استرابیسم", "slug": "strabismus"},
+      {"name": "اکولوپلاستی", "title": "فلوشیپ اکولوپلاستی (جراحی پلک)", "slug": "oculoplasty"}
+    ]},
+    {"name": "عفونی", "title": "متخصص بیماری‌های عفونی", "slug": "infectious-disease", "icon": "virus", "popular": true, "children": []},
+    {"name": "نفرولوژی", "title": "فوق تخصص کلیه (نفرولوژی)", "slug": "nephrology", "icon": "kidney", "popular": true, "children": []},
+    {"name": "جراحی پلاستیک و زیبایی", "title": "فوق تخصص جراحی پلاستیک، ترمیمی و زیبایی", "slug": "plastic-surgery", "icon": "face", "popular": false, "children": []},
+    {"name": "جراحی قلب", "title": "فوق تخصص جراحی قلب", "slug": "cardiac-surgery", "icon": "heart", "popular": false, "children": []},
+    {"name": "جراحی کودکان", "title": "فوق تخصص جراحی کودکان", "slug": "pediatric-surgery", "icon": "child", "popular": false, "children": []},
+    {"name": "طب فیزیکی و توانبخشی", "title": "متخصص طب فیزیکی و توانبخشی", "slug": "physical-medicine", "icon": "rehab", "popular": false, "children": []},
+    {"name": "فیزیوتراپی", "title": "فیزیوتراپیست", "slug": "physiotherapy", "icon": "rehab", "popular": false, "children": []},
+    {"name": "مامایی", "title": "ماما", "slug": "midwifery", "icon": "baby", "popular": false, "children": []},
+    {"name": "رادیولوژی", "title": "متخصص رادیولوژی", "slug": "radiology", "icon": "xray", "popular": false, "children": []},
+    {"name": "بیهوشی و درد", "title": "متخصص بیهوشی (فلوشیپ درد)", "slug": "anesthesiology", "icon": "syringe", "popular": false, "children": []},
+    {"name": "طب سنتی", "title": "متخصص طب سنتی ایرانی", "slug": "traditional-medicine", "icon": "herb", "popular": false, "children": []},
+    {"name": "طب ورزشی", "title": "متخصص پزشکی ورزشی", "slug": "sports-medicine", "icon": "sport", "popular": false, "children": []},
+    {"name": "طب اورژانس", "title": "متخصص طب اورژانس", "slug": "emergency-medicine", "icon": "ambulance", "popular": false, "children": []},
+    {"name": "بینایی‌سنجی", "title": "اپتومتریست (بینایی‌سنج)", "slug": "optometry", "icon": "eye", "popular": false, "children": []},
+    {"name": "شنوایی‌سنجی", "title": "شنوایی‌شناس", "slug": "audiology", "icon": "ear", "popular": false, "children": []},
+    {"name": "گفتاردرمانی", "title": "گفتاردرمانگر", "slug": "speech-therapy", "icon": "speech", "popular": false, "children": []},
+    {"name": "کاردرمانی", "title": "کاردرمانگر", "slug": "occupational-therapy", "icon": "rehab", "popular": false, "children": []},
+    {"name": "ژنتیک پزشکی", "title": "متخصص ژنتیک پزشکی", "slug": "medical-genetics", "icon": "dna", "popular": false, "children": []},
+    {"name": "داروسازی", "title": "داروساز", "slug": "pharmacy", "icon": "pill", "popular": false, "children": []}
+  ]
+}
