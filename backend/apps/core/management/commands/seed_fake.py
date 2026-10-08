@@ -71,7 +71,57 @@ class Command(BaseCommand):
         for doctor in DoctorProfile.objects.filter(consult_services__isnull=False).distinct():
             generate_slots(doctor=doctor, days=o["days"])
         self.history(doctors, centers)
+        from django.core.management import call_command
+
+        call_command("seed_magazine")
+        self.packages()
         self.stdout.write(self.style.SUCCESS(f"Done: {len(doctors)} doctors, {len(centers)} centers."))
+
+    def packages(self):
+        """Demo service packages from a few doctors and labs."""
+        from apps.clinic.models import ServicePackage
+        from apps.core.utils import generate_short_id, slugify_fa
+
+        templates = {
+            "dentistry": [("بلیچینگ (سفید کردن) دندان", 4_500_000, "شامل معاینه، جرم‌گیری و یک جلسه بلیچینگ مطب"), ("جرم‌گیری و بروساژ کامل", 1_200_000, "جرم‌گیری و پالیش هر دو فک")],
+            "dermatology": [("پاکسازی و آبرسانی پوست", 1_800_000, "پاکسازی عمیق + ماسک آبرسان"), ("تزریق بوتاکس پیشانی و دور چشم", 6_000_000, "با برند معتبر و ویزیت پیگیری")],
+            "psychology": [("پکیج ۴ جلسه مشاوره فردی", 3_200_000, "چهار جلسه ۴۵ دقیقه‌ای حضوری یا آنلاین")],
+            "nutrition": [("پکیج رژیم لاغری یک‌ماهه", 1_500_000, "ویزیت اول، رژیم اختصاصی و ۲ جلسه پیگیری")],
+            "physiotherapy": [("پکیج ۱۰ جلسه فیزیوتراپی", 5_500_000, "ده جلسه با دستگاه و تمرین درمانی")],
+        }
+        category_of = {"dentistry": "dentistry", "dermatology": "beauty", "psychology": "psychology", "nutrition": "nutrition", "physiotherapy": "physio"}
+        for spec, items in templates.items():
+            for doc in DoctorProfile.objects.filter(specialties__slug=spec, offices__isnull=False).distinct()[:3]:
+                office = doc.offices.first()
+                for title, price, summary in items:
+                    original = int(price * random.uniform(1.2, 1.6) / 10000) * 10000
+                    ServicePackage.objects.create(
+                        title=title, slug=f"{slugify_fa(title)}-{generate_short_id(5).lower()}", category=category_of[spec], doctor=doc,
+                        city=office.city, address=office.address, summary=summary,
+                        description=f"{summary}. خدمات توسط {doc.full_name} ارائه می‌شود. (داده ساختگی محیط توسعه)",
+                        includes="ویزیت اولیه\n" + summary.replace("+", "\n").replace("،", "\n"),
+                        terms="هماهنگی زمان مراجعه با شماره مطب الزامی است.\nکد استفاده را هنگام مراجعه ارائه دهید.",
+                        original_price=original, price=price, valid_days=90, status=ServicePackage.Status.APPROVED,
+                        sold_count=random.randint(0, 120),
+                    )
+        demo = DoctorProfile.objects.filter(user__mobile="09120000001").first()
+        if demo and demo.offices.exists():
+            office = demo.offices.first()
+            ServicePackage.objects.create(
+                title="ویزیت و مشاوره جامع حضوری", slug=f"demo-visit-{generate_short_id(5).lower()}", category="other", doctor=demo,
+                city=office.city, address=office.address, summary="ویزیت کامل، بررسی مدارک و برنامه درمان",
+                description="پکیج نمایشی پزشک دمو. (داده ساختگی محیط توسعه)", includes="ویزیت حضوری\nبررسی آزمایش‌ها\nبرنامه درمان مکتوب",
+                original_price=1_200_000, price=900_000, valid_days=60, max_per_user=50, status=ServicePackage.Status.APPROVED,
+            )
+        for center in Center.objects.filter(type="laboratory", online_reception=True)[:4]:
+            ServicePackage.objects.create(
+                title="چکاپ کامل سالانه", slug=f"checkup-{generate_short_id(6).lower()}", category="checkup", center=center,
+                city=center.city, address=center.address, summary="۲۰ آزمایش پرکاربرد شامل قند، چربی، تیروئید، کبد و کلیه",
+                description="پکیج چکاپ عمومی سالانه. ۱۲ ساعت ناشتایی لازم است. (داده ساختگی محیط توسعه)",
+                includes="CBC\nقند ناشتا و HbA1c\nپروفایل چربی\nآزمایش‌های کبد و کلیه\nTSH\nویتامین D",
+                terms="نمونه‌گیری صبح‌ها از ساعت ۷ تا ۱۱", original_price=2_400_000, price=1_490_000, valid_days=60,
+                status=ServicePackage.Status.APPROVED, sold_count=random.randint(10, 300),
+            )
 
     def pick_city(self):
         return random.choices(self.cities, weights=self.city_weights, k=1)[0]

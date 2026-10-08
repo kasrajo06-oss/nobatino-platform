@@ -72,7 +72,11 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
   const local = useRef<MediaStream | null>(null);
   const lastId = useRef(0);
   const pendingOffer = useRef<RTCSessionDescriptionInit | null>(null);
-  const pendingCandidates = useRef<RTCIceCandidateInit[]>([]);
+  // remote candidates buffered per call id (they can arrive before the offer/answer they belong to)
+  const remoteCandidates = useRef<Record<string, RTCIceCandidateInit[]>>({});
+  // local candidates are held back until our offer/answer has been posted, so the peer never sees them first
+  const localQueue = useRef<RTCIceCandidateInit[] | null>(null);
+  const callId = useRef<string | null>(null);
   const localVideo = useRef<HTMLVideoElement>(null);
   const remoteVideo = useRef<HTMLVideoElement>(null);
   const remoteAudio = useRef<HTMLAudioElement>(null);
@@ -93,7 +97,9 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     pc.current = null;
     stopLocal();
     pendingOffer.current = null;
-    pendingCandidates.current = [];
+    remoteCandidates.current = {};
+    localQueue.current = null;
+    callId.current = null;
     setMuted(false);
     setCamOff(false);
     setState(next);
@@ -119,7 +125,13 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     const stream = await getMedia();
     const peer = new RTCPeerConnection({ iceServers: ICE });
     stream.getTracks().forEach((t) => peer.addTrack(t, stream));
-    peer.onicecandidate = (e) => e.candidate && send("candidate", e.candidate.toJSON());
+    localQueue.current = [];
+    peer.onicecandidate = (e) => {
+      if (!e.candidate) return;
+      const c = e.candidate.toJSON();
+      if (localQueue.current) localQueue.current.push(c);
+      else send("candidate", { ...c, callId: callId.current });
+    };
     peer.ontrack = (e) => {
       const [remote] = e.streams;
       if (remoteVideo.current) remoteVideo.current.srcObject = remote;
@@ -140,9 +152,17 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [send, video]);
 
-  const flushCandidates = async () => {
-    for (const c of pendingCandidates.current) await pc.current?.addIceCandidate(c).catch(() => undefined);
-    pendingCandidates.current = [];
+  const flushRemoteCandidates = async () => {
+    const id = callId.current;
+    if (!id) return;
+    for (const c of remoteCandidates.current[id] ?? []) await pc.current?.addIceCandidate(c).catch(() => undefined);
+    remoteCandidates.current[id] = [];
+  };
+
+  const flushLocalQueue = () => {
+    const queued = localQueue.current ?? [];
+    localQueue.current = null;
+    queued.forEach((c) => send("candidate", { ...c, callId: callId.current }));
   };
 
   const preview = async () => {
@@ -159,11 +179,13 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     setError("");
     try {
       pc.current?.close();
+      callId.current = Math.random().toString(36).slice(2, 10);
       const peer = await setupPeer();
-      await send("ring");
+      await send("ring", { callId: callId.current });
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
-      await send("offer", { sdp: offer.sdp, type: offer.type });
+      await send("offer", { sdp: offer.sdp, type: offer.type, callId: callId.current });
+      flushLocalQueue();
       setState("ringing-out");
     } catch (e) {
       setError(mediaError(e));
@@ -176,10 +198,11 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     try {
       const peer = await setupPeer();
       await peer.setRemoteDescription(pendingOffer.current!);
-      await flushCandidates();
+      await flushRemoteCandidates();
       const ans = await peer.createAnswer();
       await peer.setLocalDescription(ans);
-      await send("answer", { sdp: ans.sdp, type: ans.type });
+      await send("answer", { sdp: ans.sdp, type: ans.type, callId: callId.current });
+      flushLocalQueue();
       setState("connecting");
     } catch (e) {
       setError(mediaError(e));
@@ -188,7 +211,7 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
   };
 
   const hangup = async () => {
-    await send("hangup");
+    await send("hangup", { callId: callId.current });
     cleanup();
   };
 
@@ -202,18 +225,25 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
         for (const s of signals) {
           lastId.current = Math.max(lastId.current, s.id);
           const age = Date.now() - new Date(s.created_at).getTime();
+          const sigCall = (s.payload as { callId?: string }).callId ?? "";
           if (s.kind === "offer" && age < 60_000) {
-            pendingOffer.current = s.payload as unknown as RTCSessionDescriptionInit;
-            pendingCandidates.current = [];
+            const { callId: _ignored, ...desc } = s.payload as { callId?: string; sdp: string; type: RTCSdpType };
+            void _ignored;
+            pendingOffer.current = desc;
+            callId.current = sigCall;
             setState((st) => (["idle", "ended", "preview", "failed"].includes(st) ? "ringing-in" : st));
-          } else if (s.kind === "answer" && pc.current && !pc.current.currentRemoteDescription) {
-            await pc.current.setRemoteDescription(s.payload as unknown as RTCSessionDescriptionInit);
-            await flushCandidates();
+          } else if (s.kind === "answer" && pc.current && sigCall === callId.current && !pc.current.currentRemoteDescription) {
+            const { callId: _ignored, ...desc } = s.payload as { callId?: string; sdp: string; type: RTCSdpType };
+            void _ignored;
+            await pc.current.setRemoteDescription(desc);
+            await flushRemoteCandidates();
             setState("connecting");
           } else if (s.kind === "candidate") {
-            if (pc.current?.remoteDescription) await pc.current.addIceCandidate(s.payload as RTCIceCandidateInit).catch(() => undefined);
-            else pendingCandidates.current.push(s.payload as RTCIceCandidateInit);
-          } else if (s.kind === "hangup" || s.kind === "decline") {
+            const { callId: _ignored, ...cand } = s.payload as RTCIceCandidateInit & { callId?: string };
+            void _ignored;
+            if (pc.current?.remoteDescription && sigCall === callId.current) await pc.current.addIceCandidate(cand).catch(() => undefined);
+            else (remoteCandidates.current[sigCall] ??= []).push(cand);
+          } else if ((s.kind === "hangup" || s.kind === "decline") && (!sigCall || !callId.current || sigCall === callId.current)) {
             if (s.kind === "decline") setError(`${peerName} تماس را رد کرد.`);
             cleanup();
           }

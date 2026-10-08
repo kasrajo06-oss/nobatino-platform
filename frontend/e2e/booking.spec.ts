@@ -57,8 +57,14 @@ test("lab reception booking from a center page", async ({ page }) => {
   await login(page, randomPatient(), "/centers/type/laboratory?online_reception=true");
   await page.getByRole("link", { name: "رزرو پذیرش" }).first().click();
   await page.locator("aside input[type=checkbox]").first().check();
-  await page.locator("aside [data-slot]").first().click();
-  await page.getByRole("button", { name: "ثبت پذیرش" }).click();
+  // one active booking per patient per day at a center: if this day is taken by an earlier run, try the next day
+  const days = page.locator("aside [data-day]:not([disabled])");
+  for (let i = 0; i < 5 && !page.url().includes("/booking/"); i++) {
+    await days.nth(i).click();
+    await page.locator("aside [data-slot]").first().click();
+    await page.getByRole("button", { name: "ثبت پذیرش" }).click();
+    await Promise.race([page.waitForURL(/\/booking\//, { timeout: 5000 }).catch(() => undefined), page.getByText("در همین روز نوبت فعال").waitFor({ timeout: 5000 }).catch(() => undefined)]);
+  }
   await page.waitForURL(/\/booking\//);
   await expect(page.getByText("کد پیگیری")).toBeVisible();
 });
@@ -166,4 +172,43 @@ test("video consultation: doctor calls, patient answers, media flows both ways",
   }
   await doctor.getByRole("button", { name: "قطع تماس" }).click();
   await expect(patient.locator("[data-call-state]")).toHaveAttribute("data-call-state", "ended", { timeout: 10_000 });
+});
+
+test("health magazine: list, article page with related doctors", async ({ page }) => {
+  await page.goto("/mag");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("مجله سلامت");
+  await page.getByRole("link", { name: /ناشتایی قبل از آزمایش خون/ }).first().click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("ناشتایی");
+  await expect(page.getByRole("heading", { name: "چرا ناشتایی مهم است؟" })).toBeVisible();
+  await expect(page.getByText("جایگزین معاینه و تشخیص پزشک نیست")).toBeVisible();
+});
+
+test("clinic package: buy with gateway, get voucher, doctor redeems it", async ({ browser }) => {
+  const patient = await (await browser.newContext()).newPage();
+  await login(patient, randomPatient(), "/offer");
+  // the demo doctor (09120000001) sells a package in the seed data
+  const shortId = (await demoDoctorUrl(patient)).split("/").pop()!;
+  const slug = await patient.evaluate(async (sid) => (await (await fetch(`/api/offers/?doctor=${sid}`)).json()).results[0].slug as string, shortId);
+  await patient.goto(`/offer/${slug}`);
+  await patient.getByRole("button", { name: "خرید آنلاین" }).click();
+  await patient.waitForURL(/\/orders\//);
+  if (await patient.getByText("استفاده از کیف پول").isVisible()) await patient.locator("input[type=checkbox]").uncheck();
+  await patient.getByRole("button", { name: "پرداخت" }).click();
+  await patient.waitForURL(/fake-gateway/);
+  await patient.getByRole("link", { name: "پرداخت موفق" }).click();
+  await patient.getByRole("link", { name: "مشاهده کد استفاده" }).click();
+  const voucher = (await patient.locator("p.ltr").first().textContent())!.trim();
+  expect(voucher).toMatch(/^[A-Z0-9]{8}$/);
+
+  const doctor = await (await browser.newContext()).newPage();
+  await login(doctor, "09120000001", "/doctor-panel/packages");
+  await doctor.getByLabel("کد استفاده").fill(voucher);
+  await doctor.getByRole("button", { name: "بررسی و ثبت استفاده" }).click();
+  await expect(doctor.getByText("کد معتبر است و ثبت شد")).toBeVisible();
+  await doctor.getByLabel("کد استفاده").fill(voucher);
+  await doctor.getByRole("button", { name: "بررسی و ثبت استفاده" }).click();
+  await expect(doctor.getByText("این کد قبلاً استفاده شده است")).toBeVisible();
+
+  await patient.goto("/panel/packages");
+  await expect(patient.getByText("استفاده شده").first()).toBeVisible();
 });

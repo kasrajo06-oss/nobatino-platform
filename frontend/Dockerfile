@@ -16,12 +16,15 @@ ARG NEXT_PUBLIC_SUPPORT_PHONE
 ARG NEXT_PUBLIC_ICE_SERVERS
 ARG NEXT_PUBLIC_STAGING=false
 ARG NEXT_PUBLIC_DEMO_MODE=false
-ENV NEXT_TELEMETRY_DISABLED=1
+# where the Next server reaches Django (baked into rewrites at build time; nginx normally routes /api itself)
+ARG API_INTERNAL_URL=http://backend:8000
+ENV NEXT_TELEMETRY_DISABLED=1 API_INTERNAL_URL=${API_INTERNAL_URL}
 RUN npm run build
 
 FROM ${NODE_IMAGE} AS run
 WORKDIR /app
-ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0
+ARG API_INTERNAL_URL=http://backend:8000
+ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 PORT=3000 HOSTNAME=0.0.0.0 API_INTERNAL_URL=${API_INTERNAL_URL}
 RUN addgroup -S app && adduser -S app -G app
 COPY --from=build --chown=app:app /app/.next/standalone ./
 COPY --from=build --chown=app:app /app/.next/static ./.next/static

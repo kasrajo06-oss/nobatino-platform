@@ -9,13 +9,19 @@ from .models import DoctorProfile, Office
 SHORT_WAIT_MINUTES = 15
 
 
+def upcoming(dt):
+    """Cached first-slot times may already be in the past; treat those as unknown."""
+    return dt if dt and dt > timezone.now() else None
+
+
 def doctor_badges(doc):
     badges = []
     if doc.avg_wait_minutes is not None and doc.avg_wait_minutes <= SHORT_WAIT_MINUTES:
         badges.append({"key": "short_wait", "label": "کمترین معطلی"})
     if doc.review_count >= 20 and float(doc.rating_avg) >= 4.5:
         badges.append({"key": "top_rated", "label": "محبوب بیماران"})
-    if doc.first_free_slot_at and timezone.localdate(doc.first_free_slot_at) == timezone.localdate():
+    first = upcoming(doc.first_free_slot_at)
+    if first and timezone.localdate(first) == timezone.localdate():
         badges.append({"key": "today", "label": "نوبت امروز"})
     if doc.available_now:
         badges.append({"key": "online", "label": "آنلاین؛ پاسخ فوری"})
@@ -43,13 +49,21 @@ class OfficeSerializer(serializers.ModelSerializer):
     insurances = InsuranceSerializer(many=True, read_only=True)
     center_name = serializers.CharField(source="center.name", read_only=True, default=None)
     center_slug = serializers.CharField(source="center.slug", read_only=True, default=None)
+    first_free_slot_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Office
         fields = [
             "id", "title", "city", "address", "lat", "lng", "phone", "insurances", "visit_fee", "booking_fee",
-            "booking_enabled", "notes", "center_name", "center_slug",
+            "booking_enabled", "notes", "center_name", "center_slug", "first_free_slot_at",
         ]
+
+    def get_first_free_slot_at(self, obj):
+        """Live (not cached) nearest free in-person slot of this office."""
+        from apps.scheduling.services import available_slots
+
+        slot = available_slots(office=obj).only("start").first() if obj.booking_enabled else None
+        return slot.start if slot else None
 
 
 class DoctorCardSerializer(serializers.ModelSerializer):
@@ -64,6 +78,8 @@ class DoctorCardSerializer(serializers.ModelSerializer):
     insurances = serializers.SerializerMethodField()
     consult_services = serializers.SerializerMethodField()
     available_now = serializers.BooleanField(read_only=True)
+    first_free_slot_at = serializers.SerializerMethodField()
+    first_online_slot_at = serializers.SerializerMethodField()
 
     class Meta:
         model = DoctorProfile
@@ -86,6 +102,12 @@ class DoctorCardSerializer(serializers.ModelSerializer):
 
     def get_consult_services(self, obj):
         return consult_services(obj)
+
+    def get_first_free_slot_at(self, obj):
+        return upcoming(obj.first_free_slot_at)
+
+    def get_first_online_slot_at(self, obj):
+        return upcoming(obj.first_online_slot_at)
 
     def get_consult_types(self, obj):
         return consult_types(obj, self._offices(obj))

@@ -2,6 +2,8 @@ import { DoctorFemale, DoctorMale } from "healthicons-react/filled";
 import { CalendarCheck, CreditCard, FlaskConical, Hospital, MessageSquareText, Phone, Quote, Search, ShieldCheck, Star, Stethoscope, Video, Zap } from "lucide-react";
 import Link from "next/link";
 import DoctorCard from "@/components/doctors/DoctorCard";
+import ArticleCard from "@/components/magazine/ArticleCard";
+import OfferCard from "@/components/offers/OfferCard";
 import HeroVisual from "@/components/home/HeroVisual";
 import Section from "@/components/home/Section";
 import SearchBox from "@/components/search/SearchBox";
@@ -11,7 +13,9 @@ import { num } from "@/lib/format";
 import { getHome } from "@/lib/home";
 import { CenterIcon, ConditionIcon, SpecialtyIcon } from "@/lib/icons";
 import { serverGet } from "@/lib/server-api";
-import type { City, DoctorCard as Doctor } from "@/lib/types";
+import type { ArticleCard as Article } from "@/lib/magazine";
+import type { Offer } from "@/lib/offers";
+import type { City, DoctorCard as Doctor, Paginated } from "@/lib/types";
 
 // Rendered per request (data is still cached per fetch) so builds don't need a running API.
 export const dynamic = "force-dynamic";
@@ -30,11 +34,13 @@ const STEPS = [
 ];
 
 export default async function HomePage() {
-  const [home, stats, cities, featured] = await Promise.all([
+  const [home, stats, cities, featured, offers, articles] = await Promise.all([
     getHome(),
     serverGet<{ doctors: number; centers: number; appointments: number; cities: number }>("/stats/", { revalidate: 300 }),
     serverGet<City[]>("/cities/?is_popular=true", { revalidate: 3600 }),
     serverGet<Doctor[]>("/doctors/featured/?has_free_slot=true", { revalidate: 300 }),
+    serverGet<Paginated<Offer>>("/offers/?page_size=3", { revalidate: 300 }).catch(() => null),
+    serverGet<Paginated<Article>>("/magazine/articles/?page_size=3", { revalidate: 300 }).catch(() => null),
   ]);
   const specialties = home?.specialties.filter((s) => s.is_popular) ?? [];
   const onlineSpecs = [...(home?.specialties ?? [])].sort((a, b) => b.online_count - a.online_count).slice(0, 6);
@@ -228,6 +234,13 @@ export default async function HomePage() {
         </div>
       </Section>
 
+      {/* ---------- clinic offers ---------- */}
+      {offers && offers.results.length > 0 && (
+        <Section title={`${BRAND} کلینیک`} subtitle="خدمات دندانپزشکی، زیبایی، روانشناسی و چکاپ را آنلاین و با تخفیف بخرید." more={{ href: "/offer", label: "همه پکیج‌ها" }}>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{offers.results.map((o) => <OfferCard key={o.id} offer={o} />)}</div>
+        </Section>
+      )}
+
       {/* ---------- how it works ---------- */}
       <Section title="نوبت گرفتن در سه قدم">
         <div className="grid gap-6 md:grid-cols-3">
@@ -258,6 +271,13 @@ export default async function HomePage() {
               </figure>
             ))}
           </div>
+        </Section>
+      )}
+
+      {/* ---------- magazine ---------- */}
+      {articles && articles.results.length > 0 && (
+        <Section title="مجله سلامت" subtitle="راهنمای درمان و نکات سلامت با بازبینی پزشکان." more={{ href: "/mag", label: "همه مقالات" }}>
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">{articles.results.map((a) => <ArticleCard key={a.id} article={a} />)}</div>
         </Section>
       )}
 

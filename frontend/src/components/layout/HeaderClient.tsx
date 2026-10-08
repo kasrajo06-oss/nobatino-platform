@@ -9,7 +9,17 @@ import { CenterIcon, ConditionIcon, SpecialtyIcon } from "@/lib/icons";
 import { num } from "@/lib/format";
 import type { HomeData } from "@/lib/home";
 import { useMe } from "@/lib/use-me";
+import OfferIcon from "@/components/offers/OfferIcon";
 import Logo from "./Logo";
+
+const CLINIC_CATS = [
+  ["dentistry", "دندانپزشکی"],
+  ["beauty", "پوست و زیبایی"],
+  ["psychology", "روانشناسی"],
+  ["checkup", "چکاپ و آزمایش"],
+  ["physio", "فیزیوتراپی"],
+  ["nutrition", "تغذیه و لاغری"],
+];
 
 export function panelHome(role?: string) {
   if (role === "doctor") return "/doctor-panel";
@@ -18,7 +28,7 @@ export function panelHome(role?: string) {
   return "/panel";
 }
 
-type MenuKey = "office" | "online" | "centers" | "lab";
+type MenuKey = "office" | "online" | "centers" | "lab" | "clinic" | "mag";
 
 export const ONLINE_TYPES = [
   { href: "/doctors/telehealth/phone", title: "مشاوره تلفنی", text: "تماس صوتی امن با پزشک در زمان انتخابی", icon: Phone, tone: "bg-sky-50 text-sky-600" },
@@ -64,25 +74,27 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
     { key: "online", href: "/doctors/telehealth", label: "مشاوره آنلاین" },
     { key: "centers", href: "/centers", label: "مراکز درمانی" },
     { key: "lab", href: "/centers/type/laboratory", label: "آزمایشگاه آنلاین" },
+    { key: "clinic", href: "/offer", label: "کلینیک" },
+    { key: "mag", href: "/mag", label: "مجله سلامت" },
   ];
 
   return (
     <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur" onMouseLeave={leave}>
       <div className="container-page flex h-[72px] items-center gap-8">
         <Logo />
-        <nav className="hidden h-full items-stretch lg:flex" aria-label="منوی اصلی">
+        <nav className="hidden h-full items-stretch xl:flex" aria-label="منوی اصلی">
           {NAV.map((item) => (
-            <div key={item.key} className="relative flex" onMouseEnter={() => enter(item.key)}>
+            <div key={item.key} className="relative flex" onMouseEnter={() => (item.key === "mag" ? leave() : enter(item.key))}>
               <Link
                 href={item.href}
                 onFocus={() => setOpen(item.key)}
                 aria-expanded={open === item.key}
-                className={`flex items-center gap-1 border-b-2 px-4 text-[15px] font-semibold transition ${
+                className={`flex items-center gap-1 border-b-2 px-3 text-[15px] font-semibold transition ${
                   open === item.key || pathname.startsWith(item.href) ? "border-brand-600 text-brand-700" : "border-transparent text-slate-700 hover:text-brand-700"
                 }`}
               >
                 {item.label}
-                <ChevronDown className={`size-4 transition ${open === item.key ? "rotate-180" : ""}`} />
+                {item.key !== "mag" && <ChevronDown className={`size-4 transition ${open === item.key ? "rotate-180" : ""}`} />}
               </Link>
             </div>
           ))}
@@ -103,7 +115,7 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
             <CalendarCheck className="size-4" />
             نوبت‌های من
           </Link>
-          <button className="btn-ghost p-2 lg:hidden" onClick={() => setMobile((o) => !o)} aria-label="منو" aria-expanded={mobile}>
+          <button className="btn-ghost p-2 xl:hidden" onClick={() => setMobile((o) => !o)} aria-label="منو" aria-expanded={mobile}>
             {mobile ? <X className="size-6" /> : <Menu className="size-6" />}
           </button>
         </div>
@@ -111,7 +123,7 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
 
       {/* desktop mega menu */}
       {open && menu && (
-        <div className="absolute inset-x-0 top-full hidden border-b border-line bg-white shadow-2xl shadow-slate-900/10 lg:block" onMouseEnter={() => enter(open)}>
+        <div className="absolute inset-x-0 top-full hidden border-b border-line bg-white shadow-2xl shadow-slate-900/10 xl:block" onMouseEnter={() => enter(open)}>
           <div className="container-page py-8">
             {open === "office" && (
               <div className="grid grid-cols-[2fr_1fr_1fr] gap-10">
@@ -199,6 +211,22 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
                 </div>
               </MenuColumn>
             )}
+            {open === "clinic" && (
+              <div className="grid grid-cols-[1fr_1.4fr] items-center gap-10">
+                <div className="space-y-3">
+                  <h3 className="text-xl font-extrabold text-slate-900">خرید آنلاین خدمات با تخفیف</h3>
+                  <p className="text-sm leading-7 text-muted">پکیج خدمات دندانپزشکی، زیبایی، روانشناسی و چکاپ را آنلاین بخرید و با کد استفاده به پزشک یا مرکز مراجعه کنید.</p>
+                  <Link href="/offer" className="btn-primary">مشاهده همه پکیج‌ها</Link>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {CLINIC_CATS.map(([key, label]) => (
+                    <Link key={key} href={`/offer?category=${key}`} className="flex items-center gap-3 rounded-2xl border border-line p-4 text-sm font-medium text-slate-700 transition hover:border-rose-300 hover:bg-rose-50">
+                      <OfferIcon category={key} className="size-7 text-rose-500" /> {label}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
             {open === "lab" && (
               <div className="grid grid-cols-[1fr_1.2fr] items-center gap-10">
                 <div className="space-y-3">
@@ -221,7 +249,7 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
 
       {/* mobile drawer */}
       {mobile && (
-        <nav className="max-h-[calc(100vh-72px)] overflow-y-auto border-t border-line bg-white lg:hidden">
+        <nav className="max-h-[calc(100vh-72px)] overflow-y-auto border-t border-line bg-white xl:hidden">
           <div className="container-page divide-y divide-line py-2">
             {NAV.map((item) => (
               <details key={item.key} className="group py-1">
@@ -233,6 +261,7 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
                   {item.key === "office" && popularSpecs.map((s) => <Link key={s.slug} href={`/doctors/expertise/${s.slug}`} className="rounded-lg px-3 py-2 text-sm text-slate-700">{s.name}</Link>)}
                   {item.key === "online" && ONLINE_TYPES.map((t) => <Link key={t.href} href={t.href} className="rounded-lg px-3 py-2 text-sm text-slate-700">{t.title}</Link>)}
                   {item.key === "centers" && menu?.center_types.map((t) => <Link key={t.type} href={`/centers/type/${t.type}`} className="rounded-lg px-3 py-2 text-sm text-slate-700">{t.label}</Link>)}
+                  {item.key === "clinic" && CLINIC_CATS.map(([key, label]) => <Link key={key} href={`/offer?category=${key}`} className="rounded-lg px-3 py-2 text-sm text-slate-700">{label}</Link>)}
                 </div>
               </details>
             ))}

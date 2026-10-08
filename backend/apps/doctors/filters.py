@@ -1,4 +1,5 @@
-from django.db.models import F, Q
+from django.db.models import Case, F, Q, When
+from django.utils import timezone
 from django_filters import rest_framework as filters
 
 from apps.catalog.models import Condition, Specialty
@@ -66,15 +67,18 @@ class DoctorFilter(filters.FilterSet):
         return qs.filter(Q(offers_phone=True) | Q(offers_text=True) | Q(offers_video=True)) if value else qs
 
     def filter_free(self, qs, name, value):
-        return qs.filter(first_free_slot_at__isnull=False) if value else qs
+        # the cached value can lag behind the clock (refreshed on booking and hourly), so ignore past times
+        return qs.filter(first_free_slot_at__gt=timezone.now()) if value else qs
 
     def filter_ordering(self, qs, name, value):
         if value == "popular":
             return qs.order_by("-review_count", "-rating_avg")
         if value == "nearest_slot":
-            return qs.order_by(F("first_free_slot_at").asc(nulls_last=True), "-popularity")
+            upcoming = Case(When(first_free_slot_at__gt=timezone.now(), then=F("first_free_slot_at")), default=None)
+            return qs.order_by(upcoming.asc(nulls_last=True), "-popularity")
         if value == "nearest_online_slot":
-            return qs.order_by(F("first_online_slot_at").asc(nulls_last=True), "-popularity")
+            upcoming = Case(When(first_online_slot_at__gt=timezone.now(), then=F("first_online_slot_at")), default=None)
+            return qs.order_by(upcoming.asc(nulls_last=True), "-popularity")
         if value == "online_now":
             return qs.order_by("-is_online_now", "-online_seen_at", "-popularity")
         if value == "most_successful":

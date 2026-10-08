@@ -11,6 +11,7 @@ from .models import Center
 class CenterCardSerializer(serializers.ModelSerializer):
     type_display = serializers.CharField(source="get_type_display", read_only=True)
     city = CitySerializer(read_only=True)
+    first_free_slot_at = serializers.SerializerMethodField()
 
     class Meta:
         model = Center
@@ -19,6 +20,12 @@ class CenterCardSerializer(serializers.ModelSerializer):
             "is_public_sector", "has_home_sampling", "online_reception", "rating_avg", "review_count",
             "first_free_slot_at",
         ]
+
+
+    def get_first_free_slot_at(self, obj):
+        from apps.doctors.serializers import upcoming
+
+        return upcoming(obj.first_free_slot_at)
 
 
 class CenterLabTestSerializer(serializers.ModelSerializer):

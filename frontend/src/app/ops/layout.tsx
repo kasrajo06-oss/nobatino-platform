@@ -1,6 +1,6 @@
 "use client";
 
-import { BadgeCheck, CalendarDays, CreditCard, Database, History, LayoutDashboard, MessageSquare, MessageSquareText, Users, Wallet } from "lucide-react";
+import { BadgeCheck, CalendarDays, CreditCard, Database, History, LayoutDashboard, MessageSquare, MessageSquareText, Newspaper, Ticket, Users, Wallet } from "lucide-react";
 import PanelShell from "@/components/panel/PanelShell";
 
 const NAV = [
@@ -9,6 +9,8 @@ const NAV = [
   { href: "/ops/appointments", label: "پشتیبانی نوبت‌ها", icon: CalendarDays },
   { href: "/ops/users", label: "کاربران", icon: Users },
   { href: "/ops/reviews", label: "مدیریت نظرات", icon: MessageSquare },
+  { href: "/ops/articles", label: "مجله سلامت", icon: Newspaper },
+  { href: "/ops/packages", label: "پکیج‌های خدمات", icon: Ticket },
   { href: "/ops/settlements", label: "تسویه‌ها", icon: Wallet },
   { href: "/ops/payments", label: "پرداخت‌ها", icon: CreditCard },
   { href: "/ops/catalog", label: "داده‌های مرجع", icon: Database },

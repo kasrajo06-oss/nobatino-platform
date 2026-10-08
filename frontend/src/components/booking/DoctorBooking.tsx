@@ -5,7 +5,7 @@ import { useState } from "react";
 import Alert from "@/components/ui/Alert";
 import Spinner from "@/components/ui/Spinner";
 import { ApiError, post } from "@/lib/api";
-import { faDigits, faShort, toman } from "@/lib/format";
+import { faDigits, faShort, relativeSlot, toman } from "@/lib/format";
 import type { Appointment, Office, SlotItem } from "@/lib/types";
 import { useMe } from "@/lib/use-me";
 import PatientPicker from "./PatientPicker";
@@ -13,7 +13,10 @@ import SlotPicker from "./SlotPicker";
 
 export default function DoctorBooking({ shortId, offices }: { shortId: string; offices: Office[] }) {
   const router = useRouter();
-  const bookable = offices.filter((o) => o.booking_enabled);
+  // offices with the nearest free slot first, so the default choice actually has free times
+  const bookable = offices
+    .filter((o) => o.booking_enabled)
+    .sort((a, b) => (a.first_free_slot_at ?? "9999").localeCompare(b.first_free_slot_at ?? "9999"));
   const [officeId, setOfficeId] = useState(bookable[0]?.id ?? null);
   const [day, setDay] = useState<string | null>(null);
   const [slot, setSlot] = useState<SlotItem | null>(null);
@@ -53,6 +56,9 @@ export default function DoctorBooking({ shortId, offices }: { shortId: string; o
               >
                 <b>{o.title} - {o.city.name}</b>
                 <span className="mt-1 line-clamp-1 block text-xs text-muted">{o.address}</span>
+                <span className={`mt-1 block text-xs ${o.first_free_slot_at ? "text-emerald-700" : "text-muted"}`}>
+                  {o.first_free_slot_at ? `اولین نوبت آزاد: ${relativeSlot(o.first_free_slot_at)}` : "فعلاً نوبت آزاد ندارد"}
+                </span>
               </button>
             ))}
           </div>

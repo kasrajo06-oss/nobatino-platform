@@ -1,11 +1,12 @@
 "use client";
 
-import { CalendarCheck, MessageSquare, MessagesSquare, UserRound, Users, Wallet } from "lucide-react";
+import { CalendarCheck, MessageSquare, MessagesSquare, Ticket, UserRound, Users, Wallet } from "lucide-react";
 import PanelShell from "@/components/panel/PanelShell";
 
 const NAV = [
   { href: "/panel/appointments", label: "نوبت‌های من", icon: CalendarCheck },
   { href: "/panel/consultations", label: "مشاوره‌های آنلاین", icon: MessagesSquare },
+  { href: "/panel/packages", label: "خریدهای خدمات", icon: Ticket },
   { href: "/panel/family", label: "اعضای خانواده", icon: Users },
   { href: "/panel/wallet", label: "کیف پول", icon: Wallet },
   { href: "/panel/reviews", label: "نظرات من", icon: MessageSquare },

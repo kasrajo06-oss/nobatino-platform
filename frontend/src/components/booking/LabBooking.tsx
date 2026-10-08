@@ -14,7 +14,7 @@ import SlotPicker from "./SlotPicker";
 
 export default function LabBooking({ center }: { center: CenterDetail }) {
   const router = useRouter();
-  const { data: me } = useMe();
+  const { data: me, isLoading: meLoading } = useMe();
   const [selected, setSelected] = useState<number[]>([]);
   const [filter, setFilter] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -110,7 +110,9 @@ export default function LabBooking({ center }: { center: CenterDetail }) {
       {slot && (
         <div className="space-y-3 border-t border-line pt-4">
           <p className="text-sm">زمان انتخابی: <b>{faShort(slot.start)} ساعت {faDigits(slot.time)}</b></p>
-          {!me ? (
+          {meLoading ? (
+            <Spinner className="size-5 text-brand-600" />
+          ) : !me ? (
             <button className="btn-primary w-full" onClick={() => router.push(`/login?next=${encodeURIComponent(location.pathname)}`)}>برای ادامه وارد شوید</button>
           ) : (
             <>

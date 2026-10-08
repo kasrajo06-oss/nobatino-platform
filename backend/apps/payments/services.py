@@ -83,6 +83,25 @@ def start_appointment_payment(appt: Appointment, *, use_wallet: bool):
     return {"redirect_url": url, "payment_id": payment.pk}
 
 
+def start_gateway_payment(*, user, purpose, amount, wallet_amount=0, description, appointment=None, package_order=None):
+    """Create a Payment and get the bank redirect URL (shared by package purchases)."""
+    gateway = get_gateway()
+    payment = Payment.objects.create(
+        user=user, purpose=purpose, appointment=appointment, package_order=package_order,
+        amount=amount, wallet_amount=wallet_amount, gateway=gateway.name,
+    )
+    callback = f"{settings.API_URL}/api/payments/callback/?pid={payment.pk}"
+    try:
+        authority, url = gateway.request(amount, description, callback, user.mobile)
+    except GatewayError as e:
+        payment.status, payment.error = Payment.Status.FAILED, str(e)
+        payment.save()
+        raise PaymentError(str(e)) from e
+    payment.authority, payment.status = authority, Payment.Status.REDIRECTED
+    payment.save(update_fields=["authority", "status", "updated_at"])
+    return {"redirect_url": url, "payment_id": payment.pk}
+
+
 def start_wallet_topup(user, amount: int):
     if amount < 10_000:
         raise PaymentError("حداقل مبلغ شارژ ۱۰٬۰۰۰ تومان است.")
@@ -117,6 +136,11 @@ def handle_callback(payment_id, authority, status_ok: bool) -> Payment:
         if payment.purpose == Payment.Purpose.WALLET_TOPUP:
             credit_wallet(payment.user, payment.amount, kind="topup", description=f"شارژ - کد رهگیری {result.ref_id}")
             return payment
+        if payment.purpose == Payment.Purpose.PACKAGE:
+            from apps.clinic.services import on_gateway_paid
+
+            on_gateway_paid(payment)
+            return payment
 
         appt = payment.appointment
         appt.refresh_from_db()
@@ -141,6 +165,13 @@ def provider_balance(*, doctor=None, center=None):
     earned_statuses = [AppointmentStatus.CONFIRMED, AppointmentStatus.ATTENDED, AppointmentStatus.NO_SHOW]
     gross = (
         Appointment.objects.filter(flt, status__in=earned_statuses).aggregate(s=Sum("paid_amount"))["s"] or 0
+    )
+    from apps.clinic.models import PackageOrder
+
+    gross += (
+        PackageOrder.objects.filter(
+            Q(package__doctor=doctor) if doctor else Q(package__center=center), status__in=["paid", "used", "expired"]
+        ).aggregate(s=Sum("paid_amount"))["s"] or 0
     )
     commission = gross * settings.PLATFORM_COMMISSION_PERCENT // 100
     settled = (

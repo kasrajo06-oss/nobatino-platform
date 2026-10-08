@@ -57,6 +57,8 @@ class CallbackView(APIView):
         params = f"status={'success' if payment.status == Payment.Status.PAID else 'failed'}&payment={payment.pk}"
         if payment.appointment_id:
             params += f"&tracking_code={payment.appointment.tracking_code}"
+        if payment.package_order_id:
+            params += f"&package_order={payment.package_order_id}"
         return redirect(f"{settings.SITE_URL}/payment/result?{params}")
 
 

@@ -55,6 +55,7 @@ export type Office = {
   notes: string;
   center_name: string | null;
   center_slug: string | null;
+  first_free_slot_at: string | null;
 };
 
 export type DoctorDetail = Omit<DoctorCard, "degree"> & {

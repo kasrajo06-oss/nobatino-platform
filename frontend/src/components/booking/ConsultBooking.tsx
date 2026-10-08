@@ -15,7 +15,7 @@ import SlotPicker from "./SlotPicker";
 
 export default function ConsultBooking({ shortId, service, availableNow }: { shortId: string; service: ConsultService; availableNow: boolean }) {
   const router = useRouter();
-  const { data: me } = useMe();
+  const { data: me, isLoading: meLoading } = useMe();
   const canInstant = service.instant_enabled && availableNow;
   const [instant, setInstant] = useState(canInstant && service.kind !== "video");
   const [day, setDay] = useState<string | null>(null);
@@ -84,7 +84,9 @@ export default function ConsultBooking({ shortId, service, availableNow }: { sho
             <textarea id="complaint" className="input" rows={4} maxLength={4000} placeholder="علائم، مدت بیماری، داروهای مصرفی و سؤال خود را بنویسید..." value={complaint} onChange={(e) => setComplaint(e.target.value)} />
             <p className="mt-1 text-xs text-muted">{num(complaint.length)} / ۴٬۰۰۰ — عکس و مدارک را پس از ثبت در صفحه مشاوره ارسال کنید.</p>
           </div>
-          {!me ? (
+          {meLoading ? (
+            <Spinner className="size-5 text-brand-600" />
+          ) : !me ? (
             <button className="btn-primary w-full" onClick={() => router.push(`/login?next=${encodeURIComponent(location.pathname)}`)}>برای ادامه وارد شوید</button>
           ) : (
             <>

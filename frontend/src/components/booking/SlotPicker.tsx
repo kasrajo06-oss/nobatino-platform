@@ -47,6 +47,7 @@ export default function SlotPicker({
         {availability.data.days.map((d) => (
           <button
             key={d.date}
+            data-day={d.date}
             disabled={!d.free}
             onClick={() => onDay(d.date)}
             className={`flex w-16 shrink-0 flex-col items-center rounded-xl border py-2 text-xs transition disabled:opacity-40 ${

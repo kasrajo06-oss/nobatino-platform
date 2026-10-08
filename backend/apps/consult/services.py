@@ -110,7 +110,7 @@ def _ensure_open(consult):
 @transaction.atomic
 def activate(consult, by_doctor_user):
     """Doctor accepts (instant/call) or first replies (text)."""
-    consult = Consultation.objects.select_for_update().select_related("appointment").get(pk=consult.pk)
+    consult = Consultation.objects.select_for_update(of=("self",)).select_related("appointment").get(pk=consult.pk)
     _ensure_open(consult)
     if consult.state == Consultation.State.ACTIVE:
         return consult
@@ -146,7 +146,7 @@ def post_message(consult, user, text="", file=None):
 
 @transaction.atomic
 def close(consult, *, summary="", system=False):
-    consult = Consultation.objects.select_for_update().select_related("appointment__doctor").get(pk=consult.pk)
+    consult = Consultation.objects.select_for_update(of=("self",)).select_related("appointment__doctor").get(pk=consult.pk)
     if consult.state == Consultation.State.CLOSED:
         return consult
     if consult.state != Consultation.State.ACTIVE:

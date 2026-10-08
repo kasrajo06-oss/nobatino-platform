@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarClock, CalendarDays, LayoutDashboard, MapPinned, MessageSquare, MessagesSquare, UserRound, Wallet } from "lucide-react";
+import { CalendarClock, CalendarDays, LayoutDashboard, MapPinned, MessageSquare, MessagesSquare, Ticket, UserRound, Wallet } from "lucide-react";
 import { useEffect } from "react";
 import { post } from "@/lib/api";
 import PanelShell from "@/components/panel/PanelShell";
@@ -11,6 +11,7 @@ const NAV = [
   { href: "/doctor-panel/consult", label: "مشاوره آنلاین", icon: MessagesSquare },
   { href: "/doctor-panel/schedule", label: "برنامه کاری", icon: CalendarClock },
   { href: "/doctor-panel/offices", label: "مطب‌ها", icon: MapPinned },
+  { href: "/doctor-panel/packages", label: "پکیج‌های خدمات", icon: Ticket },
   { href: "/doctor-panel/reviews", label: "نظرات بیماران", icon: MessageSquare },
   { href: "/doctor-panel/finance", label: "امور مالی", icon: Wallet },
   { href: "/doctor-panel/profile", label: "پروفایل و مدارک", icon: UserRound },

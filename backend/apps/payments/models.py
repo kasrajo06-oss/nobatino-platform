@@ -43,10 +43,12 @@ class Payment(TimeStampedModel):
     class Purpose(models.TextChoices):
         APPOINTMENT = "appointment", "پرداخت نوبت"
         WALLET_TOPUP = "wallet_topup", "شارژ کیف پول"
+        PACKAGE = "package", "خرید پکیج خدمات"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="payments")
     purpose = models.CharField(max_length=16, choices=Purpose.choices)
     appointment = models.ForeignKey("scheduling.Appointment", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
+    package_order = models.ForeignKey("clinic.PackageOrder", on_delete=models.SET_NULL, null=True, blank=True, related_name="payments")
     amount = models.PositiveIntegerField("مبلغ درگاه (تومان)")
     wallet_amount = models.PositiveIntegerField("مبلغ از کیف پول", default=0)
     gateway = models.CharField(max_length=32)

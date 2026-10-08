@@ -9,6 +9,7 @@ from apps.accounts import views as accounts
 from apps.catalog import views as catalog
 from apps.centers import panel as center_panel
 from apps.centers import views as centers
+from apps.clinic import views as clinic
 from apps.cms import views as cms
 from apps.consult import views as consult
 from apps.core import search
@@ -17,6 +18,7 @@ from apps.doctors import panel as doctor_panel
 from apps.doctors import views as doctors
 from apps.geo import views as geo
 from apps.lab import views as lab
+from apps.magazine import views as magazine
 from apps.ops import views as ops
 from apps.payments import views as payments
 from apps.reviews import views as reviews
@@ -43,6 +45,9 @@ public.register("degrees", catalog.DegreeViewSet, basename="degree")
 public.register("conditions", catalog.ConditionViewSet, basename="condition")
 public.register("insurances", catalog.InsuranceViewSet, basename="insurance")
 public.register("lab-tests", lab.LabTestViewSet, basename="lab-test")
+public.register("magazine/categories", magazine.CategoryViewSet, basename="mag-category")
+public.register("magazine/articles", magazine.ArticleViewSet, basename="mag-article")
+public.register("offers", clinic.PackageViewSet, basename="offer")
 public.register("doctors", doctors.DoctorViewSet, basename="doctor")
 public.register("centers", centers.CenterViewSet, basename="center")
 public.register("pages", cms.PageViewSet, basename="page")
@@ -54,6 +59,7 @@ me.register("family", accounts.FamilyMemberViewSet, basename="family")
 me.register("appointments", scheduling.MyAppointmentViewSet, basename="my-appointment")
 me.register("reviews", reviews.MyReviewViewSet, basename="my-review")
 me.register("consultations", consult.ConsultationViewSet, basename="my-consultation")
+me.register("package-orders", clinic.MyPackageOrderViewSet, basename="my-package-order")
 
 doctor_router = Router()
 doctor_router.register("documents", doctor_panel.DocumentViewSet, basename="dp-document")
@@ -65,12 +71,14 @@ doctor_router.register("reviews", doctor_panel.ReviewViewSet, basename="dp-revie
 doctor_router.register("consultations", consult.DoctorConsultationViewSet, basename="dp-consultation")
 doctor_router.register("online-schedules", consult.OnlineScheduleViewSet, basename="dp-online-schedule")
 doctor_router.register("online-exceptions", consult.OnlineExceptionViewSet, basename="dp-online-exception")
+doctor_router.register("packages", clinic.DoctorPackageViewSet, basename="dp-package")
 
 center_router = Router()
 center_router.register("lab-tests", center_panel.LabTestPriceViewSet, basename="cp-labtest")
 center_router.register("schedules", center_panel.CenterScheduleViewSet, basename="cp-schedule")
 center_router.register("exceptions", center_panel.CenterExceptionViewSet, basename="cp-exception")
 center_router.register("receptions", center_panel.ReceptionViewSet, basename="cp-reception")
+center_router.register("packages", clinic.CenterPackageViewSet, basename="cp-package")
 
 ops_router = Router()
 ops_router.register("users", ops.UserViewSet, basename="ops-user")
@@ -87,6 +95,9 @@ ops_router.register("catalog/conditions", ops.OpsConditionViewSet, basename="ops
 ops_router.register("catalog/insurances", ops.OpsInsuranceViewSet, basename="ops-insurance")
 ops_router.register("catalog/cities", ops.OpsCityViewSet, basename="ops-city")
 ops_router.register("catalog/lab-tests", ops.OpsLabTestViewSet, basename="ops-labtest")
+ops_router.register("articles", magazine.OpsArticleViewSet, basename="ops-article")
+ops_router.register("packages", clinic.OpsPackageViewSet, basename="ops-package")
+ops_router.register("article-categories", magazine.OpsCategoryViewSet, basename="ops-article-category")
 
 api = [
     # auth
@@ -126,6 +137,7 @@ api = [
     path("center-panel/", include(center_router.urls)),
     # operator panel
     p("ops/dashboard", ops.DashboardView.as_view()),
+    p("ops/package-orders", clinic.OpsPackageOrdersView.as_view()),
     path("ops/", include(ops_router.urls)),
     # docs
     path("schema/", SpectacularAPIView.as_view(), name="schema"),

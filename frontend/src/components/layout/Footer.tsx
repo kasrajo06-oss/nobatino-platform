@@ -11,7 +11,8 @@ const COLS = [
       ["/doctors/telehealth", "مشاوره آنلاین"],
       ["/centers/type/laboratory", "پذیرش آنلاین آزمایشگاه"],
       ["/centers", "مراکز درمانی"],
-      ["/specialties", "همه تخصص‌ها"],
+      ["/offer", "کلینیک (خدمات تخفیف‌دار)"],
+      ["/mag", "مجله سلامت"],
     ],
   },
   {

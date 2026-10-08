@@ -7,8 +7,8 @@ import type { Appointment } from "@/lib/types";
 
 export const metadata: Metadata = { title: "نتیجه پرداخت", robots: { index: false } };
 
-export default async function PaymentResult({ searchParams }: { searchParams: Promise<{ status?: string; tracking_code?: string }> }) {
-  const { status, tracking_code } = await searchParams;
+export default async function PaymentResult({ searchParams }: { searchParams: Promise<{ status?: string; tracking_code?: string; package_order?: string }> }) {
+  const { status, tracking_code, package_order } = await searchParams;
   const ok = status === "success";
   const appt = ok && tracking_code ? await serverGet<Appointment>(`/me/appointments/${tracking_code}/`, { auth: true }).catch(() => null) : null;
   return (
@@ -23,7 +23,9 @@ export default async function PaymentResult({ searchParams }: { searchParams: Pr
         )}
         {!ok && <p className="text-sm text-muted">در صورت کسر وجه، مبلغ حداکثر تا ۷۲ ساعت به حساب شما برمی‌گردد یا به کیف پول واریز می‌شود.</p>}
         <div className="flex gap-2">
-          {appt?.is_online ? (
+          {package_order ? (
+            <Link href={`/orders/${package_order}`} className="btn-primary flex-1">{ok ? "مشاهده کد استفاده" : "تلاش مجدد"}</Link>
+          ) : appt?.is_online ? (
             <Link href={`/consult/${tracking_code}`} className="btn-primary flex-1">ورود به اتاق مشاوره</Link>
           ) : (
             tracking_code && <Link href={`/booking/${tracking_code}`} className="btn-primary flex-1">{ok ? "مشاهده نوبت" : "تلاش مجدد"}</Link>

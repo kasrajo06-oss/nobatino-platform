@@ -62,6 +62,12 @@ nano .env
 
 پنل اپراتور: `https://DOMAIN/ops` — پنل ادمین جنگو (پشتیبان): `https://DOMAIN/admin`
 
+مقالات راهنمای اولیه مجله (یک بار، اختیاری):
+
+```bash
+./scripts/manage.sh seed_magazine
+```
+
 ## ۴. نسخه آزمایشی (بدون پنل پیامک)
 
 با `STAGING=true`:

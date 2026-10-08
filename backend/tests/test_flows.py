@@ -317,3 +317,11 @@ def test_lab_reception_booking(ref):
     sc = APIClient()
     sc.force_authenticate(staff)
     assert sc.get("/api/center-panel/receptions/").json()["count"] == 1
+
+
+def test_stale_cached_first_slot_is_ignored(doctor):
+    """first_free_slot_at is a cache; a time that already passed must not count as a free slot."""
+    DoctorProfile.objects.filter(pk=doctor.pk).update(first_free_slot_at=timezone.now() - timedelta(hours=1))
+    c = APIClient()
+    assert c.get("/api/doctors/", {"has_free_slot": "true"}).json()["count"] == 0
+    assert c.get("/api/doctors/").json()["results"][0]["first_free_slot_at"] is None
