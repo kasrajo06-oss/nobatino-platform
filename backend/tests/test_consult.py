@@ -155,3 +155,24 @@ def test_home_endpoint(online_doctor):
     assert data["cities"][0]["doctor_count"] == 1
     cardio = next(s for s in data["specialties"] if s["slug"] == "cardiology")
     assert cardio["doctor_count"] == 1 and cardio["online_count"] == 1
+
+
+def test_consult_files_are_private_and_signed(online_doctor, django_capture_on_commit_callbacks):
+    from django.core.files.uploadedfile import SimpleUploadedFile
+
+    patient = make_patient()
+    pc = client_for(patient)
+    code = pc.post("/api/me/consultations/", {"doctor": online_doctor.short_id, "kind": "text", "complaint": "عکس ضایعه پوستی را می‌فرستم"}, format="json").json()["appointment"]["tracking_code"]
+    pay(pc, code, django_capture_on_commit_callbacks)
+
+    bad = pc.post(f"/api/me/consultations/{code}/messages/", {"file": SimpleUploadedFile("x.exe", b"MZ")}, format="multipart")
+    assert bad.status_code == 400
+    ok = pc.post(f"/api/me/consultations/{code}/messages/", {"file": SimpleUploadedFile("my-name-lab.jpg", b"\xff\xd8data", content_type="image/jpeg")}, format="multipart")
+    assert ok.status_code == 201
+    url = ok.json()["file"]
+    assert "/api/private-media?f=" in url and "my-name-lab" not in url
+
+    path = url[url.index("/api/"):]
+    anon = APIClient()
+    assert anon.get(path).status_code == 200  # signed link works without a session (short-lived)
+    assert anon.get(path[:-3] + "abc").status_code == 404  # tampered signature

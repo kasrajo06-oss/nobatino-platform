@@ -205,6 +205,14 @@ class ReceptionViewSet(viewsets.ReadOnlyModelViewSet):
         f = request.FILES.get("result_file")
         if not f:
             return Response({"detail": "فایل جواب را انتخاب کنید."}, status=status.HTTP_400_BAD_REQUEST)
+        from django.core.exceptions import ValidationError
+
+        from apps.core.storage import validate_upload
+
+        try:
+            validate_upload(f)
+        except ValidationError as e:
+            return Response({"detail": e.messages[0]}, status=status.HTTP_400_BAD_REQUEST)
         lab.result_file = f
         lab.status = LabReception.Status.RESULT_READY
         lab.save()

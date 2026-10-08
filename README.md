@@ -77,16 +77,7 @@ docker compose -f infra/docker-compose.yml exec backend python manage.py seed_fa
 
 ## استقرار در سرور
 
-```bash
-cp infra/.env.example infra/.env        # دامنه، رمزها، مرچنت زرین‌پال، کلید کاوه‌نگار
-# گواهی TLS را در infra/certs/fullchain.pem و privkey.pem قرار دهید
-docker compose -f infra/docker-compose.prod.yml --env-file infra/.env up -d --build
-```
-
-- تنظیمات production اجازه نمی‌دهد با درگاه آزمایشی یا پیامک کنسولی بالا بیاید.
-- بکاپ روزانه Postgres در `infra/backups/` (۱۴ روز نگهداری). یک نسخه را خارج از سرور هم نگه دارید.
-- به‌خاطر درگاه پرداخت و پیامک داخلی، سرور داخل ایران (یا با IP ایران برای زرین‌پال) توصیه می‌شود.
-- برای کاوه‌نگار یک قالب «verify» با یک توکن تعریف کنید و نامش را در `KAVENEGAR_OTP_TEMPLATE` بگذارید.
+راهنمای کامل قدم‌به‌قدم (سرور، دامنه، SSL، نسخه آزمایشی بدون پیامک، عمومی کردن): **[DEPLOY.md](DEPLOY.md)**
 
 ## تست
 

@@ -66,9 +66,15 @@ def send_reminders():
     for field, delta in (("reminded_24h", timedelta(hours=24)), ("reminded_2h", timedelta(hours=2))):
         qs = Appointment.objects.filter(
             status=AppointmentStatus.CONFIRMED, start__gt=now, start__lte=now + delta, **{field: False}
-        ).select_related("doctor", "center")
+        ).select_related("doctor__user", "center")
         for a in qs:
-            backend.send(a.patient_mobile, f"یادآوری {settings.BRAND_NAME}: نوبت شما نزد {a.provider_name} در {fa_datetime(a.start)}. کد پیگیری {a.tracking_code}", "reminder")
+            if a.is_online:
+                room = f"{settings.SITE_URL}/consult/{a.tracking_code}"
+                backend.send(a.patient_mobile, f"یادآوری {settings.BRAND_NAME}: {a.get_kind_display()} با {a.provider_name} در {fa_datetime(a.start)}. ورود به اتاق مشاوره: {room}", "reminder")
+                if a.doctor_id:
+                    backend.send(a.doctor.user.mobile, f"یادآوری: {a.get_kind_display()} با {a.patient_name} در {fa_datetime(a.start)}. {room}", "reminder_doctor")
+            else:
+                backend.send(a.patient_mobile, f"یادآوری {settings.BRAND_NAME}: نوبت شما نزد {a.provider_name} در {fa_datetime(a.start)}. کد پیگیری {a.tracking_code}", "reminder")
             Appointment.objects.filter(pk=a.pk).update(**{field: True})
             count += 1
     return count

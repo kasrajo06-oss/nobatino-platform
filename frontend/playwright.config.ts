@@ -10,6 +10,9 @@ export default defineConfig({
     locale: "fa-IR",
     timezoneId: "Asia/Tehran",
     trace: "retain-on-failure",
+    // fake camera/microphone so WebRTC calls can be tested headless
+    permissions: ["camera", "microphone"],
+    launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] },
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
 });

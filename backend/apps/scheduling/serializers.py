@@ -84,6 +84,17 @@ class BookSerializer(serializers.Serializer):
     home_sampling = serializers.BooleanField(required=False, default=False)
     home_address = serializers.CharField(required=False, allow_blank=True, max_length=400)
 
+    def validate_prescription(self, value):
+        from django.core.exceptions import ValidationError
+
+        from apps.core.storage import validate_upload
+
+        try:
+            validate_upload(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(e.messages[0]) from e
+        return value
+
 
 class CancelSerializer(serializers.Serializer):
     reason = serializers.CharField(required=False, allow_blank=True, max_length=255)

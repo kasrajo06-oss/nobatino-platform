@@ -1,6 +1,10 @@
 from .base import *  # noqa: F401,F403
 
 DEBUG = False
+import tempfile  # noqa: E402
+
+PRIVATE_MEDIA_ROOT = tempfile.mkdtemp(prefix="private-media-")
+MEDIA_ROOT = tempfile.mkdtemp(prefix="media-")
 JWT_COOKIE_SECURE = False
 CELERY_TASK_ALWAYS_EAGER = True
 CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}

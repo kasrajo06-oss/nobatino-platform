@@ -7,9 +7,11 @@ Every consultation is an Appointment (kind phone/text/video) so payment, refunds
 """
 from datetime import timedelta
 
+from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.core.storage import validate_upload
 from apps.scheduling.models import AppointmentStatus
 from apps.scheduling.services import (
     BookingError,
@@ -131,6 +133,10 @@ def post_message(consult, user, text="", file=None):
     is_doctor = consult.is_doctor(user)
     if not (text.strip() or file):
         raise ConsultError("پیام خالی است.")
+    try:
+        validate_upload(file)
+    except ValidationError as e:
+        raise ConsultError(e.messages[0]) from e
     if is_doctor and consult.state == Consultation.State.WAITING:
         activate(consult, user)
     if consult.closes_at and consult.closes_at < timezone.now():

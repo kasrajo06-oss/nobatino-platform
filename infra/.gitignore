@@ -1,3 +1,4 @@
-certs/
-backups/
 .env
+certbot/
+backups/
+nginx/htpasswd

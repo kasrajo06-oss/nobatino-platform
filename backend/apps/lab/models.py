@@ -1,6 +1,7 @@
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+from apps.core.storage import private_storage, validate_upload
 
 
 class LabTest(models.Model):
@@ -43,13 +44,13 @@ class LabReception(TimeStampedModel):
 
     appointment = models.OneToOneField("scheduling.Appointment", on_delete=models.CASCADE, related_name="lab_reception")
     tests = models.ManyToManyField(LabTest, blank=True, verbose_name="آزمایش‌ها")
-    prescription = models.FileField("تصویر نسخه", upload_to="prescriptions/", blank=True)
+    prescription = models.FileField("تصویر نسخه", upload_to="prescriptions/", blank=True, storage=private_storage, validators=[validate_upload])
     has_insurance_prescription = models.BooleanField("نسخه بیمه دارد", default=False)
     home_sampling = models.BooleanField("نمونه‌گیری در منزل", default=False)
     home_address = models.CharField("آدرس نمونه‌گیری", max_length=400, blank=True)
     estimated_price = models.PositiveIntegerField("برآورد هزینه آزمایش‌ها", default=0)
     status = models.CharField(max_length=16, choices=Status.choices, default=Status.BOOKED)
-    result_file = models.FileField("فایل جواب", upload_to="lab-results/", blank=True)
+    result_file = models.FileField("فایل جواب", upload_to="lab-results/", blank=True, storage=private_storage, validators=[validate_upload])
 
     class Meta:
         verbose_name = "پذیرش آزمایشگاه"

@@ -109,6 +109,14 @@ STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+# medical documents: never served directly, only through signed short-lived links (apps.core.storage)
+PRIVATE_MEDIA_ROOT = env("PRIVATE_MEDIA_ROOT", default=str(BASE_DIR / "private_media"))
+PRIVATE_URL_MAX_AGE = 60 * 60
+FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
+
+# Staging = a real server that is not public yet (no SMS provider / payment gateway).
+# Allows on-screen OTP, fake payments and console SMS; nginx adds basic-auth + noindex.
+STAGING = env.bool("STAGING", default=False)
 
 if env("AWS_STORAGE_BUCKET_NAME", default=""):
     STORAGES = {

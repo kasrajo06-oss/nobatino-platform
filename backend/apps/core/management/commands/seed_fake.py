@@ -50,6 +50,8 @@ class Command(BaseCommand):
         parser.add_argument("--seed", type=int, default=42)
 
     def handle(self, *args, **o):
+        if not (settings.DEBUG or settings.STAGING):
+            raise CommandError("seed_fake creates fake doctors; it only runs with DEBUG or STAGING.")
         if not Specialty.objects.exists():
             raise CommandError("Run `python manage.py seed_reference` first.")
         random.seed(o["seed"])

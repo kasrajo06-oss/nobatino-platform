@@ -2,6 +2,7 @@ from django.conf import settings
 from django.db import models
 
 from apps.core.models import TimeStampedModel
+from apps.core.storage import private_storage, validate_upload
 
 
 class ConsultKind(models.TextChoices):
@@ -71,7 +72,7 @@ class ConsultMessage(models.Model):
     from_doctor = models.BooleanField(default=False)
     is_system = models.BooleanField(default=False)
     text = models.TextField(blank=True)
-    file = models.FileField(upload_to="consult-files/", blank=True)
+    file = models.FileField(upload_to="consult-files/", blank=True, storage=private_storage, validators=[validate_upload])
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
 
     class Meta:

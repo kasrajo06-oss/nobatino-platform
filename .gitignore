@@ -19,6 +19,12 @@ frontend/playwright-report/
 *.tsbuildinfo
 next-env.d.ts
 
+# Deploy (server-local)
+infra/certbot/
+infra/nginx/htpasswd
+infra/backups/
+backend/private_media/
+
 # Misc
 .env
 .DS_Store

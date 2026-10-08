@@ -12,6 +12,7 @@ from apps.centers import views as centers
 from apps.cms import views as cms
 from apps.consult import views as consult
 from apps.core import search
+from apps.core.storage import private_media_view
 from apps.doctors import panel as doctor_panel
 from apps.doctors import views as doctors
 from apps.geo import views as geo
@@ -97,6 +98,7 @@ api = [
     p("search/suggest", search.SuggestView.as_view()),
     p("stats", search.StatsView.as_view()),
     p("home", search.HomeView.as_view()),
+    re_path(r"^private-media/?$", private_media_view, name="private-media"),
     # patient
     p("me", accounts.MeView.as_view()),
     p("me/wallet", payments.WalletView.as_view()),

@@ -123,3 +123,47 @@ test("online text consultation between patient and doctor", async ({ browser }) 
   await doctor.getByRole("button", { name: "ثبت و پایان مشاوره" }).click();
   await expect(patient.getByText("سرماخوردگی ویروسی")).toBeVisible({ timeout: 20_000 });
 });
+
+test("video consultation: doctor calls, patient answers, media flows both ways", async ({ browser }) => {
+  const patientCtx = await browser.newContext({ permissions: ["camera", "microphone"] });
+  const patient = await patientCtx.newPage();
+  await login(patient, randomPatient(), "/");
+  const doctorUrl = await demoDoctorUrl(patient);
+  const shortId = doctorUrl.split("/").pop()!;
+
+  // book + pay a video consultation through the API (the UI flow is covered by the text test)
+  const code = await patient.evaluate(async (sid) => {
+    const days = (await (await fetch(`/api/doctors/${sid}/online-availability/`)).json()).days;
+    for (const d of days.filter((x: { free: number }) => x.free)) {
+      const slots = (await (await fetch(`/api/doctors/${sid}/online-slots/?date=${d.date}`)).json()).slots;
+      for (const s of slots) {
+        const r = await fetch("/api/me/consultations/", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ doctor: sid, kind: "video", slot: s.id, complaint: "مشاوره تصویری برای بررسی ضایعه پوستی" }),
+        });
+        if (r.ok) return (await r.json()).appointment.tracking_code as string;
+      }
+    }
+    throw new Error("no bookable online slot");
+  }, shortId);
+  const start = await patient.evaluate(async (c) => (await fetch("/api/payments/start/", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tracking_code: c, use_wallet: false }),
+  })).json(), code);
+  const callback = new URL(start.redirect_url).searchParams.get("callback")!;
+  const authority = new URL(start.redirect_url).searchParams.get("authority")!;
+  await patient.goto(`${callback}&Authority=${authority}&Status=OK`);
+  await patient.goto(`/consult/${code}`);
+
+  const doctor = await (await browser.newContext({ permissions: ["camera", "microphone"] })).newPage();
+  await login(doctor, "09120000001", `/consult/${code}`);
+  await doctor.getByRole("button", { name: "شروع تماس" }).click();
+
+  await patient.getByRole("button", { name: "پاسخ" }).click({ timeout: 15_000 });
+  for (const page of [patient, doctor]) {
+    await expect(page.locator("[data-call-state]")).toHaveAttribute("data-call-state", "connected", { timeout: 20_000 });
+    // remote video actually receives frames from the other side's fake camera
+    await expect.poll(() => page.getByTestId("remote-video").evaluate((v: HTMLVideoElement) => v.videoWidth), { timeout: 10_000 }).toBeGreaterThan(0);
+  }
+  await doctor.getByRole("button", { name: "قطع تماس" }).click();
+  await expect(patient.locator("[data-call-state]")).toHaveAttribute("data-call-state", "ended", { timeout: 10_000 });
+});

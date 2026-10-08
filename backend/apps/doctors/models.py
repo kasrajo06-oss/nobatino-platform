@@ -4,6 +4,7 @@ from django.urls import reverse  # noqa: F401
 
 from apps.accounts.models import Gender
 from apps.core.models import TimeStampedModel
+from apps.core.storage import private_storage, validate_upload
 from apps.core.utils import generate_short_id, normalize_fa, slugify_fa
 
 
@@ -113,7 +114,7 @@ class DoctorDocument(TimeStampedModel):
 
     doctor = models.ForeignKey(DoctorProfile, on_delete=models.CASCADE, related_name="documents")
     kind = models.CharField("نوع", max_length=32, choices=Kind.choices)
-    file = models.FileField("فایل", upload_to="doctor-docs/")
+    file = models.FileField("فایل", upload_to="doctor-docs/", storage=private_storage, validators=[validate_upload])
 
     class Meta:
         verbose_name = "مدرک پزشک"

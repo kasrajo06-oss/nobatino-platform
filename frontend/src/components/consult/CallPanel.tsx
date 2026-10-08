@@ -1,11 +1,11 @@
 "use client";
 
-import { Mic, MicOff, Phone, PhoneOff, Video, VideoOff } from "lucide-react";
+import { Camera, Mic, MicOff, Phone, PhoneOff, RotateCcw, ShieldAlert, Video, VideoOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { get, post } from "@/lib/api";
 
 type Signal = { id: number; kind: string; payload: Record<string, unknown>; created_at: string };
-type CallState = "idle" | "ringing-out" | "ringing-in" | "connecting" | "connected" | "ended";
+export type CallState = "idle" | "preview" | "ringing-out" | "ringing-in" | "connecting" | "connected" | "failed" | "ended";
 
 const ICE: RTCIceServer[] = (() => {
   try {
@@ -15,9 +15,50 @@ const ICE: RTCIceServer[] = (() => {
   }
 })();
 
+/** Simple two-tone ring generated with WebAudio (no audio files to ship). */
+function useRingtone(active: boolean) {
+  useEffect(() => {
+    if (!active || typeof window === "undefined") return;
+    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    let stopped = false;
+    const ring = () => {
+      if (stopped) return;
+      [0, 0.25].forEach((offset, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.frequency.value = i ? 480 : 440;
+        gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
+        gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + offset + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.22);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(ctx.currentTime + offset);
+        osc.stop(ctx.currentTime + offset + 0.25);
+      });
+    };
+    ring();
+    const t = setInterval(ring, 2000);
+    const title = document.title;
+    let flip = false;
+    const tt = setInterval(() => {
+      flip = !flip;
+      document.title = flip ? "📞 تماس ورودی..." : title;
+    }, 1000);
+    return () => {
+      stopped = true;
+      clearInterval(t);
+      clearInterval(tt);
+      document.title = title;
+      ctx.close().catch(() => undefined);
+    };
+  }, [active]);
+}
+
 /**
  * 1:1 in-browser call (WebRTC). Signaling goes through the API with short polling, so it works
- * behind any reverse proxy without websockets. In production add a TURN server to NEXT_PUBLIC_ICE_SERVERS.
+ * behind any reverse proxy without websockets. Needs HTTPS (or localhost) for camera/mic access,
+ * and a TURN server (NEXT_PUBLIC_ICE_SERVERS) for users behind strict NATs / mobile networks.
  */
 export default function CallPanel({ code, video, enabled, peerName }: { code: string; video: boolean; enabled: boolean; peerName: string }) {
   const base = `/me/consultations/${code}/signals/`;
@@ -26,6 +67,7 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
   const [muted, setMuted] = useState(false);
   const [camOff, setCamOff] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [secure, setSecure] = useState(true);
   const pc = useRef<RTCPeerConnection | null>(null);
   const local = useRef<MediaStream | null>(null);
   const lastId = useRef(0);
@@ -35,22 +77,46 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
   const remoteVideo = useRef<HTMLVideoElement>(null);
   const remoteAudio = useRef<HTMLAudioElement>(null);
 
+  useRingtone(state === "ringing-in" || state === "ringing-out");
+  useEffect(() => setSecure(typeof window === "undefined" || window.isSecureContext), []);
+
   const send = useCallback((kind: string, payload: object = {}) => post(base, { kind, payload }).catch(() => undefined), [base]);
+
+  const stopLocal = () => {
+    local.current?.getTracks().forEach((t) => t.stop());
+    local.current = null;
+    if (localVideo.current) localVideo.current.srcObject = null;
+  };
 
   const cleanup = useCallback((next: CallState = "ended") => {
     pc.current?.close();
     pc.current = null;
-    local.current?.getTracks().forEach((t) => t.stop());
-    local.current = null;
+    stopLocal();
     pendingOffer.current = null;
     pendingCandidates.current = [];
+    setMuted(false);
+    setCamOff(false);
     setState(next);
   }, []);
 
-  const setupPeer = useCallback(async () => {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video });
+  const getMedia = async () => {
+    if (local.current) return local.current;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: video ? { width: 1280, height: 720 } : false });
     local.current = stream;
     if (localVideo.current) localVideo.current.srcObject = stream;
+    return stream;
+  };
+
+  const mediaError = (e: unknown) => {
+    const name = (e as { name?: string })?.name;
+    if (name === "NotAllowedError") return "اجازه دسترسی به میکروفون/دوربین داده نشد. از تنظیمات مرورگر (آیکون قفل کنار آدرس) اجازه دهید.";
+    if (name === "NotFoundError") return video ? "دوربین یا میکروفون پیدا نشد." : "میکروفون پیدا نشد.";
+    if (name === "NotReadableError") return "دوربین/میکروفون در حال استفاده توسط برنامه دیگری است.";
+    return "دسترسی به میکروفون/دوربین ممکن نشد.";
+  };
+
+  const setupPeer = useCallback(async () => {
+    const stream = await getMedia();
     const peer = new RTCPeerConnection({ iceServers: ICE });
     stream.getTracks().forEach((t) => peer.addTrack(t, stream));
     peer.onicecandidate = (e) => e.candidate && send("candidate", e.candidate.toJSON());
@@ -60,11 +126,18 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
       if (remoteAudio.current) remoteAudio.current.srcObject = remote;
     };
     peer.onconnectionstatechange = () => {
-      if (peer.connectionState === "connected") setState("connected");
-      if (["failed", "disconnected"].includes(peer.connectionState)) setError("ارتباط قطع شد. اینترنت خود را بررسی و دوباره تماس بگیرید.");
+      if (peer.connectionState === "connected") {
+        setError("");
+        setState("connected");
+      }
+      if (peer.connectionState === "failed") {
+        setError("ارتباط برقرار نشد یا قطع شد. اینترنت را بررسی و دوباره تلاش کنید.");
+        setState("failed");
+      }
     };
     pc.current = peer;
     return peer;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [send, video]);
 
   const flushCandidates = async () => {
@@ -72,17 +145,28 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     pendingCandidates.current = [];
   };
 
+  const preview = async () => {
+    setError("");
+    try {
+      await getMedia();
+      setState("preview");
+    } catch (e) {
+      setError(mediaError(e));
+    }
+  };
+
   const startCall = async () => {
     setError("");
     try {
+      pc.current?.close();
       const peer = await setupPeer();
       await send("ring");
       const offer = await peer.createOffer();
       await peer.setLocalDescription(offer);
       await send("offer", { sdp: offer.sdp, type: offer.type });
       setState("ringing-out");
-    } catch {
-      setError("دسترسی به میکروفون/دوربین ممکن نشد. اجازه مرورگر را بررسی کنید.");
+    } catch (e) {
+      setError(mediaError(e));
       cleanup("idle");
     }
   };
@@ -97,14 +181,14 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
       await peer.setLocalDescription(ans);
       await send("answer", { sdp: ans.sdp, type: ans.type });
       setState("connecting");
-    } catch {
-      setError("دسترسی به میکروفون/دوربین ممکن نشد.");
+    } catch (e) {
+      setError(mediaError(e));
       cleanup("idle");
     }
   };
 
-  const hangup = async (notify = true) => {
-    if (notify) await send("hangup");
+  const hangup = async () => {
+    await send("hangup");
     cleanup();
   };
 
@@ -120,8 +204,9 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
           const age = Date.now() - new Date(s.created_at).getTime();
           if (s.kind === "offer" && age < 60_000) {
             pendingOffer.current = s.payload as unknown as RTCSessionDescriptionInit;
-            setState((st) => (st === "idle" || st === "ended" ? "ringing-in" : st));
-          } else if (s.kind === "answer" && pc.current) {
+            pendingCandidates.current = [];
+            setState((st) => (["idle", "ended", "preview", "failed"].includes(st) ? "ringing-in" : st));
+          } else if (s.kind === "answer" && pc.current && !pc.current.currentRemoteDescription) {
             await pc.current.setRemoteDescription(s.payload as unknown as RTCSessionDescriptionInit);
             await flushCandidates();
             setState("connecting");
@@ -129,20 +214,22 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
             if (pc.current?.remoteDescription) await pc.current.addIceCandidate(s.payload as RTCIceCandidateInit).catch(() => undefined);
             else pendingCandidates.current.push(s.payload as RTCIceCandidateInit);
           } else if (s.kind === "hangup" || s.kind === "decline") {
+            if (s.kind === "decline") setError(`${peerName} تماس را رد کرد.`);
             cleanup();
           }
         }
       } catch {
         /* transient network error: keep polling */
       }
-      if (alive) setTimeout(tick, pc.current || pendingOffer.current ? 1000 : 3000);
+      if (alive) setTimeout(tick, pc.current || pendingOffer.current ? 800 : 2500);
     };
-    // skip signals older than this page load
+    // ignore signals from earlier calls (older than a minute)
     get<Signal[]>(`${base}?after=0`)
       .then((all) => {
-        const recent = all.filter((s) => Date.now() - new Date(s.created_at).getTime() < 60_000);
-        lastId.current = Math.max(0, ...all.filter((s) => !recent.includes(s)).map((s) => s.id));
+        const old = all.filter((s) => Date.now() - new Date(s.created_at).getTime() >= 60_000);
+        lastId.current = Math.max(0, ...old.map((s) => s.id));
       })
+      .catch(() => undefined)
       .finally(tick);
     return () => {
       alive = false;
@@ -169,31 +256,47 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
   };
 
   const inCall = ["ringing-out", "connecting", "connected"].includes(state);
+  const showLocal = video && (inCall || state === "preview");
   const mmss = `${String(Math.floor(seconds / 60)).padStart(2, "0")}:${String(seconds % 60).padStart(2, "0")}`;
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-slate-900 text-white">
+    <div className="overflow-hidden rounded-2xl bg-slate-900 text-white" data-call-state={state}>
       <div className={`relative ${video ? "aspect-video" : "h-40"} grid place-items-center`}>
-        {video && <video ref={remoteVideo} autoPlay playsInline className="absolute inset-0 size-full object-cover" />}
+        {video && <video ref={remoteVideo} autoPlay playsInline className={`absolute inset-0 size-full object-cover ${state === "connected" ? "" : "opacity-0"}`} data-testid="remote-video" />}
         {!video && <audio ref={remoteAudio} autoPlay />}
-        {video && inCall && <video ref={localVideo} autoPlay playsInline muted className="absolute bottom-3 left-3 h-24 w-32 rounded-xl object-cover ring-2 ring-white/40" />}
-        <div className="relative text-center">
+        {/* always mounted so the stream can be attached before the call connects */}
+        <video
+          ref={localVideo}
+          autoPlay
+          playsInline
+          muted
+          className={`absolute rounded-xl object-cover ring-2 ring-white/40 ${showLocal ? "" : "hidden"} ${state === "preview" ? "inset-0 size-full rounded-none ring-0" : "bottom-3 left-3 h-24 w-32"}`}
+        />
+        <div className="relative px-4 text-center">
           {state === "connected" ? (
             !video && <p className="text-2xl font-black tracking-widest">{mmss}</p>
+          ) : state === "preview" ? (
+            !video && <p className="text-sm text-emerald-300">میکروفون فعال است؛ آماده تماس هستید.</p>
           ) : (
             <p className="text-sm text-slate-300">
               {state === "idle" && (enabled ? `تماس ${video ? "تصویری" : "صوتی"} با ${peerName}` : "تماس در زمان مشاوره فعال می‌شود")}
-              {state === "ringing-out" && "در حال برقراری تماس..."}
-              {state === "ringing-in" && `${peerName} تماس گرفته است`}
+              {state === "ringing-out" && "در حال زنگ خوردن..."}
+              {state === "ringing-in" && <b className="animate-pulse text-base text-white">{peerName} تماس گرفته است</b>}
               {state === "connecting" && "در حال اتصال..."}
+              {state === "failed" && "اتصال ناموفق"}
               {state === "ended" && "تماس پایان یافت"}
             </p>
           )}
-          {video && state === "connected" && <span className="absolute -top-24 rounded-full bg-black/40 px-3 py-1 text-xs">{mmss}</span>}
         </div>
+        {video && state === "connected" && <span className="absolute top-3 right-3 rounded-full bg-black/50 px-3 py-1 text-xs">{mmss}</span>}
       </div>
+      {!secure && (
+        <p className="flex items-center gap-2 bg-amber-500/90 px-4 py-2 text-xs text-amber-950">
+          <ShieldAlert className="size-4 shrink-0" /> برای تماس، سایت باید با https باز شود (دسترسی دوربین/میکروفون در اتصال ناامن مسدود است).
+        </p>
+      )}
       {error && <p className="bg-rose-600/90 px-4 py-2 text-center text-xs">{error}</p>}
-      <div className="flex items-center justify-center gap-3 bg-slate-800 p-3">
+      <div className="flex flex-wrap items-center justify-center gap-3 bg-slate-800 p-3">
         {state === "ringing-in" ? (
           <>
             <button onClick={answer} className="btn bg-emerald-500 px-6 text-white hover:bg-emerald-600"><Phone className="size-4" /> پاسخ</button>
@@ -201,14 +304,24 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
           </>
         ) : inCall ? (
           <>
-            <button onClick={toggleMute} className="grid size-11 place-items-center rounded-full bg-white/10 hover:bg-white/20" aria-label="میکروفون">{muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}</button>
-            {video && <button onClick={toggleCam} className="grid size-11 place-items-center rounded-full bg-white/10 hover:bg-white/20" aria-label="دوربین">{camOff ? <VideoOff className="size-5" /> : <Video className="size-5" />}</button>}
-            <button onClick={() => hangup()} className="grid size-12 place-items-center rounded-full bg-rose-500 hover:bg-rose-600" aria-label="قطع تماس"><PhoneOff className="size-5" /></button>
+            <button onClick={toggleMute} className={`grid size-11 place-items-center rounded-full ${muted ? "bg-white text-slate-900" : "bg-white/10 hover:bg-white/20"}`} aria-label="میکروفون">{muted ? <MicOff className="size-5" /> : <Mic className="size-5" />}</button>
+            {video && <button onClick={toggleCam} className={`grid size-11 place-items-center rounded-full ${camOff ? "bg-white text-slate-900" : "bg-white/10 hover:bg-white/20"}`} aria-label="دوربین">{camOff ? <VideoOff className="size-5" /> : <Video className="size-5" />}</button>}
+            <button onClick={hangup} className="grid size-12 place-items-center rounded-full bg-rose-500 hover:bg-rose-600" aria-label="قطع تماس"><PhoneOff className="size-5" /></button>
           </>
         ) : (
-          <button onClick={startCall} disabled={!enabled} className="btn bg-emerald-500 px-6 text-white hover:bg-emerald-600 disabled:opacity-40">
-            {video ? <Video className="size-4" /> : <Phone className="size-4" />} شروع تماس
-          </button>
+          <>
+            <button onClick={startCall} disabled={!enabled || !secure} className="btn bg-emerald-500 px-6 text-white hover:bg-emerald-600 disabled:opacity-40">
+              {state === "failed" ? <RotateCcw className="size-4" /> : video ? <Video className="size-4" /> : <Phone className="size-4" />}
+              {state === "failed" ? "تلاش مجدد" : "شروع تماس"}
+            </button>
+            {state !== "preview" ? (
+              <button onClick={preview} disabled={!secure} className="btn bg-white/10 text-white hover:bg-white/20 disabled:opacity-40">
+                {video ? <Camera className="size-4" /> : <Mic className="size-4" />} تست {video ? "دوربین" : "میکروفون"}
+              </button>
+            ) : (
+              <button onClick={() => { stopLocal(); setState("idle"); }} className="btn bg-white/10 text-white hover:bg-white/20">پایان تست</button>
+            )}
+          </>
         )}
       </div>
     </div>
