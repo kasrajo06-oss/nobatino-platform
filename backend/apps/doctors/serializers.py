@@ -17,6 +17,8 @@ def doctor_badges(doc):
         badges.append({"key": "top_rated", "label": "محبوب بیماران"})
     if doc.first_free_slot_at and timezone.localdate(doc.first_free_slot_at) == timezone.localdate():
         badges.append({"key": "today", "label": "نوبت امروز"})
+    if doc.available_now:
+        badges.append({"key": "online", "label": "آنلاین؛ پاسخ فوری"})
     return badges
 
 
@@ -26,6 +28,14 @@ def consult_types(doc, offices):
         types.append("in_person")
     types += [k for k, flag in (("phone", doc.offers_phone), ("text", doc.offers_text), ("video", doc.offers_video)) if flag]
     return types
+
+
+def consult_services(doc):
+    return [
+        {"kind": s.kind, "kind_display": s.get_kind_display(), "price": s.price, "duration_minutes": s.duration_minutes,
+         "instant_enabled": s.instant_enabled}
+        for s in doc.consult_services.all() if s.is_active
+    ]
 
 
 class OfficeSerializer(serializers.ModelSerializer):
@@ -52,6 +62,8 @@ class DoctorCardSerializer(serializers.ModelSerializer):
     main_office = serializers.SerializerMethodField()
     offices_count = serializers.SerializerMethodField()
     insurances = serializers.SerializerMethodField()
+    consult_services = serializers.SerializerMethodField()
+    available_now = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = DoctorProfile
@@ -60,13 +72,20 @@ class DoctorCardSerializer(serializers.ModelSerializer):
             "primary_specialty", "specialties", "rating_avg", "review_count", "recommend_pct",
             "successful_appointments", "endorsement_count", "avg_wait_minutes", "first_free_slot_at",
             "badges", "consult_types", "main_office", "offices_count", "insurances", "offers_instant",
+            "consult_services", "available_now", "first_online_slot_at",
         ]
 
     def _offices(self, obj):
-        return [o for o in obj.offices.all() if o.is_active]
+        """Active offices; when the list is filtered by city, offices in that city come first."""
+        offices = [o for o in obj.offices.all() if o.is_active]
+        city = self.context.get("city")
+        return sorted(offices, key=lambda o: o.city.slug != city) if city else offices
 
     def get_badges(self, obj):
         return doctor_badges(obj)
+
+    def get_consult_services(self, obj):
+        return consult_services(obj)
 
     def get_consult_types(self, obj):
         return consult_types(obj, self._offices(obj))
@@ -95,7 +114,7 @@ class EndorserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = DoctorProfile
-        fields = ["short_id", "slug", "full_name", "photo", "specialty"]
+        fields = ["short_id", "slug", "full_name", "photo", "specialty", "gender"]
 
 
 class DoctorDetailSerializer(DoctorCardSerializer):

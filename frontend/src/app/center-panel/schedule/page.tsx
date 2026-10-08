@@ -7,7 +7,7 @@ export default function Page() {
   return (
     <>
       <PageTitle>برنامه پذیرش</PageTitle>
-      <ScheduleEditor base="/center-panel" />
+      <ScheduleEditor schedulesPath="/center-panel/schedules" exceptionsPath="/center-panel/exceptions" />
     </>
   );
 }

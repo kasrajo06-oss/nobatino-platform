@@ -18,21 +18,29 @@ class AppointmentKind(models.TextChoices):
     PHONE = "phone", "مشاوره تلفنی"
     TEXT = "text", "مشاوره متنی"
     VIDEO = "video", "مشاوره ویدیویی"
+    # Slot-only kind: a doctor's online time that can be booked as a phone or video consultation
+    ONLINE = "online", "زمان مشاوره آنلاین"
 
 
 class _OwnedByOfficeOrCenter(models.Model):
     office = models.ForeignKey("doctors.Office", on_delete=models.CASCADE, null=True, blank=True, related_name="+")
     center = models.ForeignKey("centers.Center", on_delete=models.CASCADE, null=True, blank=True, related_name="+")
+    # online-consultation schedule of a doctor (not tied to an office)
+    doctor = models.ForeignKey("doctors.DoctorProfile", on_delete=models.CASCADE, null=True, blank=True, related_name="+")
 
     class Meta:
         abstract = True
 
     @property
     def owner(self):
-        return self.office or self.center
+        return self.office or self.center or self.doctor
 
 
-_ONE_OWNER = Q(office__isnull=False, center__isnull=True) | Q(office__isnull=True, center__isnull=False)
+_ONE_OWNER = (
+    Q(office__isnull=False, center__isnull=True, doctor__isnull=True)
+    | Q(office__isnull=True, center__isnull=False, doctor__isnull=True)
+    | Q(office__isnull=True, center__isnull=True, doctor__isnull=False)
+)
 
 
 class WeeklySchedule(_OwnedByOfficeOrCenter, TimeStampedModel):
@@ -83,6 +91,7 @@ class Slot(_OwnedByOfficeOrCenter):
             models.CheckConstraint(condition=_ONE_OWNER, name="slot_one_owner"),
             models.UniqueConstraint(fields=["office", "start", "kind"], name="uniq_office_slot"),
             models.UniqueConstraint(fields=["center", "start", "kind"], name="uniq_center_slot"),
+            models.UniqueConstraint(fields=["doctor", "start", "kind"], name="uniq_doctor_slot"),
         ]
 
     @property
@@ -106,7 +115,7 @@ class Appointment(TimeStampedModel):
     tracking_code = models.CharField("کد پیگیری", max_length=12, unique=True)
     kind = models.CharField(max_length=16, choices=AppointmentKind.choices, default=AppointmentKind.IN_PERSON)
     status = models.CharField(max_length=20, choices=AppointmentStatus.choices, db_index=True)
-    slot = models.ForeignKey(Slot, on_delete=models.PROTECT, related_name="appointments")
+    slot = models.ForeignKey(Slot, on_delete=models.PROTECT, null=True, blank=True, related_name="appointments")
     doctor = models.ForeignKey("doctors.DoctorProfile", on_delete=models.PROTECT, null=True, blank=True, related_name="appointments")
     office = models.ForeignKey("doctors.Office", on_delete=models.PROTECT, null=True, blank=True, related_name="appointments")
     center = models.ForeignKey("centers.Center", on_delete=models.PROTECT, null=True, blank=True, related_name="appointments")
@@ -137,6 +146,10 @@ class Appointment(TimeStampedModel):
 
     def __str__(self):
         return f"{self.tracking_code} - {self.patient_name}"
+
+    @property
+    def is_online(self):
+        return self.kind in (AppointmentKind.PHONE, AppointmentKind.TEXT, AppointmentKind.VIDEO)
 
     @property
     def provider_name(self):

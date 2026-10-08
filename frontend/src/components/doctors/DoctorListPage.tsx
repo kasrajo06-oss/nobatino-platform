@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Breadcrumbs, { type Crumb } from "@/components/ui/Breadcrumbs";
 import Empty from "@/components/ui/Empty";
 import Pagination from "@/components/ui/Pagination";
+import { cityImage } from "@/lib/cities";
 import { num } from "@/lib/format";
 import { qs, serverGet } from "@/lib/server-api";
 import type { City, DoctorCard as Doctor, Insurance, Paginated, Specialty } from "@/lib/types";
@@ -17,10 +18,12 @@ export type ListParams = {
   intro?: string;
   crumbs: Crumb[];
   basePath: string;
+  telehealth?: boolean;
+  appointmentType?: string;
 };
 
 const PAGE_SIZE = 20;
-const ALLOWED = ["q", "gender", "insurance", "appointment_type", "has_free_slot", "instant", "ordering", "page"];
+const ALLOWED = ["q", "gender", "insurance", "appointment_type", "has_free_slot", "instant", "online_now", "ordering", "page", "specialty"];
 
 export default async function DoctorListPage(p: ListParams) {
   const sp: Record<string, string> = {};
@@ -32,7 +35,11 @@ export default async function DoctorListPage(p: ListParams) {
   const city = p.city || (typeof p.searchParams.city === "string" ? p.searchParams.city : undefined);
   const [data, cities, specialties, insurances] = await Promise.all([
     serverGet<Paginated<Doctor>>(
-      `/doctors/${qs({ ...sp, city, specialty: p.specialty, condition: p.condition, page, page_size: PAGE_SIZE })}`,
+      `/doctors/${qs({
+        ...sp, city, specialty: p.specialty || sp.specialty, condition: p.condition, page, page_size: PAGE_SIZE,
+        telehealth: p.telehealth, appointment_type: p.appointmentType || sp.appointment_type,
+        ordering: sp.ordering || (p.telehealth ? "online_now" : undefined),
+      })}`,
       { revalidate: 30 },
     ),
     serverGet<City[]>("/cities/?is_popular=true", { revalidate: 3600 }),
@@ -50,23 +57,34 @@ export default async function DoctorListPage(p: ListParams) {
   return (
     <div className="container-page py-6">
       <Breadcrumbs items={p.crumbs} />
-      <div className="mt-3 mb-5">
-        <h1 className="text-2xl font-extrabold text-slate-900">{p.title}</h1>
-        {p.intro && <p className="mt-2 max-w-3xl text-sm leading-7 text-muted">{p.intro}</p>}
-      </div>
-      <div className="grid gap-6 lg:grid-cols-[280px_1fr]">
+      {city && cityImage(city) ? (
+        <div className="relative mt-4 mb-8 overflow-hidden rounded-3xl">
+          <img src={cityImage(city)!} alt="" className="absolute inset-0 size-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-l from-slate-950/85 via-slate-900/60 to-slate-900/20" />
+          <div className="relative px-6 py-12 text-white md:px-10 md:py-16">
+            <h1 className="text-3xl font-black md:text-4xl">{p.title}</h1>
+            <p className="mt-3 text-white/85">{num(data.count)} پزشک با امکان رزرو آنلاین نوبت</p>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-4 mb-8 rounded-3xl bg-gradient-to-l from-brand-50 to-white px-6 py-8 ring-1 ring-line md:px-10">
+          <h1 className="text-2xl font-black text-slate-900 md:text-3xl">{p.title}</h1>
+          {p.intro && <p className="mt-3 max-w-3xl text-sm leading-7 text-muted">{p.intro}</p>}
+        </div>
+      )}
+      <div className="grid gap-8 lg:grid-cols-[300px_1fr]">
         <Suspense>
-          <DoctorFilters specialties={specialties} cities={cities} insurances={insurances} lockCity={city} lockSpecialty={p.specialty} />
+          <DoctorFilters specialties={specialties} cities={cities} insurances={insurances} lockCity={city} lockSpecialty={p.specialty} telehealth={p.telehealth} appointmentType={p.appointmentType} />
         </Suspense>
-        <section className="space-y-4">
+        <section className="space-y-5">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-sm text-muted">{num(data.count)} پزشک یافت شد</p>
             <Suspense>
-              <SortBar />
+              <SortBar telehealth={p.telehealth} />
             </Suspense>
           </div>
           {data.results.length ? (
-            data.results.map((d) => <DoctorCard key={d.id} doctor={d} />)
+            data.results.map((d) => <DoctorCard key={d.id} doctor={d} telehealth={p.telehealth} />)
           ) : (
             <Empty title="پزشکی با این مشخصات پیدا نشد">فیلترها را تغییر دهید یا شهر دیگری را انتخاب کنید.</Empty>
           )}

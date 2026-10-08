@@ -24,17 +24,19 @@ class OtpRequestView(APIView):
         s.is_valid(raise_exception=True)
         mobile = s.validated_data["mobile"]
         try:
-            resend_in = request_otp(mobile)
+            resend_in, code = request_otp(mobile)
         except OtpError as e:
             return Response({"detail": str(e)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
-        return Response(
-            {
-                "mobile": mobile,
-                "resend_in": resend_in,
-                "expires_in": settings.OTP_TTL_SECONDS,
-                "is_registered": User.objects.filter(mobile=mobile).exists(),
-            }
-        )
+        data = {
+            "mobile": mobile,
+            "resend_in": resend_in,
+            "expires_in": settings.OTP_TTL_SECONDS,
+            "is_registered": User.objects.filter(mobile=mobile).exists(),
+        }
+        if settings.OTP_SHOW_CODE:
+            # Development/demo only: there is no SMS provider, so hand the code to the login page.
+            data["debug_code"] = code
+        return Response(data)
 
 
 class OtpVerifyView(APIView):

@@ -1,7 +1,7 @@
 from celery import shared_task
 
 from apps.centers.models import Center
-from apps.doctors.models import Office
+from apps.doctors.models import DoctorProfile, Office
 
 from . import services
 
@@ -13,6 +13,8 @@ def generate_slots_task():
         total += services.generate_slots(office=office)
     for center in Center.objects.filter(is_active=True, online_reception=True):
         total += services.generate_slots(center=center)
+    for doctor in DoctorProfile.objects.filter(is_active=True, consult_services__is_active=True).distinct():
+        total += services.generate_slots(doctor=doctor)
     return total
 
 

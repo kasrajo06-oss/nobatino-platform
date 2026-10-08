@@ -57,7 +57,8 @@ export default function CheckoutPage() {
           <h1 className="text-xl font-extrabold">{a.status === "pending_payment" ? "تکمیل رزرو" : "جزئیات نوبت"}</h1>
           <StatusChip status={a.status} label={a.status_display} />
         </div>
-        {a.status === "confirmed" && <Alert tone="success">نوبت شما با موفقیت ثبت شد. کد پیگیری پیامک شد.</Alert>}
+        {a.status === "confirmed" && <Alert tone="success">{a.is_online ? "مشاوره شما ثبت و برای پزشک ارسال شد." : "نوبت شما با موفقیت ثبت شد. کد پیگیری پیامک شد."}</Alert>}
+        {a.is_online && a.status !== "pending_payment" && <Link href={`/consult/${a.tracking_code}`} className="btn-primary w-full py-3">ورود به اتاق مشاوره</Link>}
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div><dt className="text-muted">{a.kind === "lab" ? "مرکز" : "پزشک"}</dt><dd className="font-bold">{a.provider_name}</dd><dd className="text-xs text-brand-700">{a.specialty}</dd></div>
           <div><dt className="text-muted">بیمار</dt><dd className="font-bold">{a.patient_name}</dd><dd className="text-xs text-muted">کد ملی {faDigits(a.patient_national_code)}</dd></div>

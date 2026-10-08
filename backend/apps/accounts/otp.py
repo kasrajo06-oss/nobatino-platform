@@ -20,8 +20,8 @@ def _hash(mobile, code):
     return hmac.new(settings.SECRET_KEY.encode(), f"{mobile}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
-def request_otp(mobile: str) -> int:
-    """Create a code and queue the SMS. Returns seconds until a resend is allowed."""
+def request_otp(mobile: str) -> tuple[int, str]:
+    """Create a code and queue the SMS. Returns (seconds until resend is allowed, code)."""
     if cache.get(f"otp-lock:{mobile}"):
         raise OtpError("کد قبلاً ارسال شده است؛ کمی صبر کنید.")
     code = generate_numeric_code(settings.OTP_LENGTH)
@@ -31,7 +31,7 @@ def request_otp(mobile: str) -> int:
     from apps.notifications.tasks import send_otp_sms
 
     send_otp_sms.delay(mobile, code)
-    return settings.OTP_RESEND_SECONDS
+    return settings.OTP_RESEND_SECONDS, code
 
 
 def verify_otp(mobile: str, code: str) -> None:

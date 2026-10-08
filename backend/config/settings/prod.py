@@ -3,6 +3,8 @@ from django.core.exceptions import ImproperlyConfigured
 from .base import *  # noqa: F401,F403
 from .base import PAYMENT_GATEWAY, SENTRY_DSN, SMS_BACKEND, env
 
+OTP_SHOW_CODE = False
+
 DEBUG = False
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 SESSION_COOKIE_SECURE = True

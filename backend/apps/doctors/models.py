@@ -36,6 +36,8 @@ class DoctorProfile(TimeStampedModel):
     offers_text = models.BooleanField("مشاوره متنی", default=False)
     offers_video = models.BooleanField("مشاوره ویدیویی", default=False)
     offers_instant = models.BooleanField("مشاوره فوری", default=False)
+    is_online_now = models.BooleanField("آنلاین برای مشاوره فوری", default=False)
+    online_seen_at = models.DateTimeField("آخرین حضور آنلاین", null=True, blank=True)
 
     verification_status = models.CharField(
         "وضعیت احراز", max_length=16, choices=VerificationStatus.choices, default=VerificationStatus.DRAFT, db_index=True
@@ -52,6 +54,7 @@ class DoctorProfile(TimeStampedModel):
     endorsement_count = models.PositiveIntegerField("تأیید همکاران", default=0)
     popularity = models.FloatField("امتیاز محبوبیت", default=0, db_index=True)
     first_free_slot_at = models.DateTimeField("اولین نوبت آزاد", null=True, blank=True, db_index=True)
+    first_online_slot_at = models.DateTimeField("اولین زمان مشاوره آنلاین", null=True, blank=True, db_index=True)
     search_text = models.TextField(blank=True, editable=False)
 
     class Meta:
@@ -69,6 +72,18 @@ class DoctorProfile(TimeStampedModel):
     @property
     def is_public(self):
         return self.is_active and self.verification_status == VerificationStatus.APPROVED
+
+    @property
+    def available_now(self):
+        """Ready for an instant consultation: toggled online and seen in the last few minutes."""
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        return bool(
+            self.offers_instant and self.is_online_now and self.online_seen_at
+            and self.online_seen_at > timezone.now() - timedelta(minutes=5)
+        )
 
     def build_search_text(self):
         parts = [self.first_name, self.last_name, self.medical_council_no]

@@ -35,6 +35,9 @@ export type DoctorCard = {
   offices_count: number;
   insurances: string[];
   offers_instant: boolean;
+  consult_services: import("./consult").ConsultService[];
+  available_now: boolean;
+  first_online_slot_at: string | null;
 };
 
 export type Office = {
@@ -59,7 +62,7 @@ export type DoctorDetail = Omit<DoctorCard, "degree"> & {
   bio: string;
   medical_council_no: string;
   offices: Office[];
-  endorsers: { short_id: string; slug: string; full_name: string; photo: string | null; specialty: string }[];
+  endorsers: { short_id: string; slug: string; full_name: string; photo: string | null; specialty: string; gender: "male" | "female" }[];
   experience_years: number | null;
   offers_phone: boolean;
   offers_text: boolean;
@@ -113,7 +116,7 @@ export type CenterDetail = CenterCard & {
   reception_fee: number;
   home_sampling_fee: number;
   lab_tests: CenterLabTest[];
-  doctors: { short_id: string; slug: string; full_name: string; photo: string | null; specialty: string; rating_avg: string }[];
+  doctors: { short_id: string; slug: string; full_name: string; photo: string | null; specialty: string; rating_avg: string; gender: "male" | "female" }[];
 };
 
 export type DayAvailability = { date: string; jalali: string; weekday: string; day: number; month: string; free: number };
@@ -186,6 +189,8 @@ export type Appointment = {
     status_display: string;
     result_file: string | null;
   };
+  is_online: boolean;
+  consult_state: "waiting" | "active" | "closed" | null;
   created_at: string;
 };
 

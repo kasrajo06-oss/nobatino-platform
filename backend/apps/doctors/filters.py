@@ -18,6 +18,8 @@ class DoctorFilter(filters.FilterSet):
     appointment_type = filters.CharFilter(method="filter_type")
     has_free_slot = filters.BooleanFilter(method="filter_free")
     instant = filters.BooleanFilter(field_name="offers_instant")
+    online_now = filters.BooleanFilter(method="filter_online_now")
+    telehealth = filters.BooleanFilter(method="filter_telehealth")
     ordering = filters.CharFilter(method="filter_ordering")
 
     class Meta:
@@ -51,6 +53,18 @@ class DoctorFilter(filters.FilterSet):
         }
         return qs.filter(mapping[value]) if value in mapping else qs
 
+    def filter_online_now(self, qs, name, value):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        if not value:
+            return qs
+        return qs.filter(offers_instant=True, is_online_now=True, online_seen_at__gt=timezone.now() - timedelta(minutes=5))
+
+    def filter_telehealth(self, qs, name, value):
+        return qs.filter(Q(offers_phone=True) | Q(offers_text=True) | Q(offers_video=True)) if value else qs
+
     def filter_free(self, qs, name, value):
         return qs.filter(first_free_slot_at__isnull=False) if value else qs
 
@@ -59,6 +73,10 @@ class DoctorFilter(filters.FilterSet):
             return qs.order_by("-review_count", "-rating_avg")
         if value == "nearest_slot":
             return qs.order_by(F("first_free_slot_at").asc(nulls_last=True), "-popularity")
+        if value == "nearest_online_slot":
+            return qs.order_by(F("first_online_slot_at").asc(nulls_last=True), "-popularity")
+        if value == "online_now":
+            return qs.order_by("-is_online_now", "-online_seen_at", "-popularity")
         if value == "most_successful":
             return qs.order_by("-successful_appointments")
         return qs.order_by("-popularity", "-review_count")

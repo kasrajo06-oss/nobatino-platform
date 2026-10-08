@@ -16,7 +16,7 @@ from .services import BookingError, book_slot, cancel_appointment
 
 def appointment_queryset():
     return Appointment.objects.select_related(
-        "doctor__primary_specialty", "office", "center", "lab_reception", "review"
+        "doctor__primary_specialty", "office", "center", "lab_reception", "review", "consultation"
     ).prefetch_related("lab_reception__tests")
 
 

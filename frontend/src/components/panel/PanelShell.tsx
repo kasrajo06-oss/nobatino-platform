@@ -37,7 +37,7 @@ export default function PanelShell({
   const logout = async () => {
     await post("/auth/logout/");
     qc.setQueryData(["me"], null);
-    router.replace("/");
+    window.location.assign("/");
   };
 
   return (

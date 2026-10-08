@@ -4,6 +4,7 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 ACCESS_COOKIE = "access_token"
 REFRESH_COOKIE = "refresh_token"
+SESSION_FLAG_COOKIE = "has_session"
 
 
 class CookieJWTAuthentication(JWTAuthentication):
@@ -40,10 +41,13 @@ def set_auth_cookies(response, access, refresh):
     }
     response.set_cookie(ACCESS_COOKIE, access, max_age=int(jwt["ACCESS_TOKEN_LIFETIME"].total_seconds()), **common)
     response.set_cookie(REFRESH_COOKIE, refresh, max_age=int(jwt["REFRESH_TOKEN_LIFETIME"].total_seconds()), **common)
+    response.set_cookie(
+        SESSION_FLAG_COOKIE, "1", max_age=int(jwt["REFRESH_TOKEN_LIFETIME"].total_seconds()), **{**common, "httponly": False}
+    )
     return response
 
 
 def clear_auth_cookies(response):
-    for name in (ACCESS_COOKIE, REFRESH_COOKIE):
+    for name in (ACCESS_COOKIE, REFRESH_COOKIE, SESSION_FLAG_COOKIE):
         response.delete_cookie(name, path="/", domain=settings.JWT_COOKIE_DOMAIN)
     return response

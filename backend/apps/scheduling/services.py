@@ -24,14 +24,15 @@ class BookingError(Exception):
     pass
 
 
-def _owner_filter(office=None, center=None):
-    return {"office": office, "center": None} if office else {"office": None, "center": center}
+def _owner_filter(office=None, center=None, doctor=None):
+    """Exactly one owner is set; the other two filter as NULL."""
+    return {"office": office, "center": center, "doctor": doctor}
 
 
-def generate_slots(office=None, center=None, days=None, start_date=None):
+def generate_slots(office=None, center=None, doctor=None, days=None, start_date=None):
     """Materialize Slot rows from the weekly schedule for the next `days` days. Idempotent."""
     days = days or settings.SLOT_GENERATION_DAYS
-    owner = _owner_filter(office, center)
+    owner = _owner_filter(office, center, doctor)
     tz = timezone.get_current_timezone()
     today = start_date or timezone.localdate()
     schedules = list(WeeklySchedule.objects.filter(is_active=True, **owner))
@@ -74,13 +75,18 @@ def generate_slots(office=None, center=None, days=None, start_date=None):
     stale_ids = [s.pk for key, s in existing.items() if key not in wanted]
     if stale_ids:
         Slot.objects.filter(pk__in=stale_ids, booked_count=0).delete()
-    refresh_first_free_slot(office=office, center=center)
+    refresh_first_free_slot(office=office, center=center, doctor=doctor)
     return len(to_create)
 
 
-def refresh_first_free_slot(office=None, center=None):
+def refresh_first_free_slot(office=None, center=None, doctor=None):
     now = timezone.now()
-    if office is not None:
+    if doctor is not None:
+        first = Slot.objects.filter(
+            doctor=doctor, start__gt=now, is_blocked=False, booked_count__lt=F("capacity")
+        ).aggregate(m=Min("start"))["m"]
+        type(doctor).objects.filter(pk=doctor.pk).update(first_online_slot_at=first)
+    elif office is not None:
         doctor = office.doctor
         first = (
             Slot.objects.filter(
@@ -100,13 +106,13 @@ def refresh_first_free_slot(office=None, center=None):
         type(center).objects.filter(pk=center.pk).update(first_free_slot_at=first)
 
 
-def available_slots(office=None, center=None, date=None, kind=AppointmentKind.IN_PERSON):
+def available_slots(office=None, center=None, doctor=None, date=None, kind=AppointmentKind.IN_PERSON):
     qs = Slot.objects.filter(
         start__gt=timezone.now() + timedelta(minutes=5),
         is_blocked=False,
         booked_count__lt=F("capacity"),
         kind=kind,
-        **_owner_filter(office, center),
+        **_owner_filter(office, center, doctor),
     )
     if date:
         qs = qs.filter(start__date=date)
@@ -123,14 +129,54 @@ def _new_tracking_code():
 def _price_for(slot):
     if slot.office_id:
         return slot.office.booking_fee
-    return slot.center.reception_fee
+    if slot.center_id:
+        return slot.center.reception_fee
+    return 0  # online-consult slots are priced by the consult service
+
+
+def patient_identity(user, family_member=None):
+    if family_member is not None:
+        return family_member.full_name, family_member.national_code
+    if not user.profile_completed:
+        raise BookingError("لطفاً ابتدا نام و کد ملی خود را در پروفایل تکمیل کنید.")
+    return user.full_name, user.national_code
+
+
+def create_appointment(*, user, kind, price, start, family_member=None, note="", slot=None, doctor=None, office=None, center=None):
+    """Create the appointment row; paid ones are held for SLOT_HOLD_MINUTES until payment."""
+    name, national_code = patient_identity(user, family_member)
+    status = AppointmentStatus.PENDING_PAYMENT if price > 0 else AppointmentStatus.CONFIRMED
+    try:
+        appt = Appointment.objects.create(
+            tracking_code=_new_tracking_code(),
+            kind=kind,
+            status=status,
+            slot=slot,
+            doctor=doctor,
+            office=office,
+            center=center,
+            user=user,
+            family_member=family_member,
+            patient_name=name,
+            patient_national_code=national_code,
+            patient_mobile=user.mobile,
+            start=start,
+            price=price,
+            held_until=timezone.now() + timedelta(minutes=settings.SLOT_HOLD_MINUTES) if price > 0 else None,
+            patient_note=note,
+        )
+    except IntegrityError as e:
+        raise BookingError("خطا در ثبت نوبت؛ دوباره تلاش کنید.") from e
+    if status == AppointmentStatus.CONFIRMED:
+        transaction.on_commit(lambda: _notify_confirmed(appt.pk))
+    return appt
 
 
 @transaction.atomic
-def book_slot(*, user, slot_id, family_member=None, note="", extra_price=0, kind=None):
+def book_slot(*, user, slot_id, family_member=None, note="", extra_price=0, kind=None, price=None):
     """Reserve one seat of a slot. Atomic conditional UPDATE prevents overbooking on any database."""
     try:
-        slot = Slot.objects.select_related("office__doctor", "center").get(pk=slot_id)
+        slot = Slot.objects.select_related("office__doctor", "center", "doctor").get(pk=slot_id)
     except Slot.DoesNotExist as e:
         raise BookingError("نوبت انتخاب‌شده وجود ندارد.") from e
     if slot.start <= timezone.now():
@@ -139,19 +185,16 @@ def book_slot(*, user, slot_id, family_member=None, note="", extra_price=0, kind
         raise BookingError("نوبت‌دهی آنلاین برای این مطب فعال نیست.")
     if slot.center_id and not (slot.center.is_public and slot.center.online_reception):
         raise BookingError("پذیرش آنلاین برای این مرکز فعال نیست.")
+    if slot.doctor_id and not slot.doctor.is_public:
+        raise BookingError("این پزشک در حال حاضر مشاوره آنلاین ندارد.")
 
-    if family_member is not None:
-        name, national_code = family_member.full_name, family_member.national_code
-    else:
-        if not user.profile_completed:
-            raise BookingError("لطفاً ابتدا نام و کد ملی خود را در پروفایل تکمیل کنید.")
-        name, national_code = user.full_name, user.national_code
-
+    _, national_code = patient_identity(user, family_member)
+    doctor = slot.doctor or (slot.office.doctor if slot.office_id else None)
     if Appointment.objects.filter(
         slot__start__date=slot.start.date(),
         patient_national_code=national_code,
         status__in=ACTIVE_STATUSES,
-        **({"doctor": slot.office.doctor} if slot.office_id else {"center": slot.center}),
+        **({"doctor": doctor} if doctor else {"center": slot.center}),
     ).exists():
         raise BookingError("برای این بیمار در همین روز نوبت فعال ثبت شده است.")
 
@@ -161,45 +204,29 @@ def book_slot(*, user, slot_id, family_member=None, note="", extra_price=0, kind
     if not updated:
         raise BookingError("متأسفانه این نوبت لحظاتی پیش رزرو شد. لطفاً زمان دیگری انتخاب کنید.")
 
-    price = _price_for(slot) + extra_price
-    status = AppointmentStatus.PENDING_PAYMENT if price > 0 else AppointmentStatus.CONFIRMED
-    try:
-        appt = Appointment.objects.create(
-            tracking_code=_new_tracking_code(),
-            kind=kind or slot.kind,
-            status=status,
-            slot=slot,
-            doctor=slot.office.doctor if slot.office_id else None,
-            office=slot.office,
-            center=slot.center,
-            user=user,
-            family_member=family_member,
-            patient_name=name,
-            patient_national_code=national_code,
-            patient_mobile=user.mobile,
-            start=slot.start,
-            price=price,
-            held_until=timezone.now() + timedelta(minutes=settings.SLOT_HOLD_MINUTES) if price > 0 else None,
-            patient_note=note,
-        )
-    except IntegrityError as e:
-        raise BookingError("خطا در ثبت نوبت؛ دوباره تلاش کنید.") from e
-
-    transaction.on_commit(lambda: refresh_first_free_slot(office=slot.office, center=slot.center))
-    if status == AppointmentStatus.CONFIRMED:
-        transaction.on_commit(lambda: _notify_confirmed(appt.pk))
+    appt = create_appointment(
+        user=user, kind=kind or slot.kind, price=(_price_for(slot) if price is None else price) + extra_price,
+        start=slot.start, family_member=family_member, note=note, slot=slot, doctor=doctor,
+        office=slot.office, center=slot.center,
+    )
+    transaction.on_commit(lambda: refresh_first_free_slot(office=slot.office, center=slot.center, doctor=slot.doctor))
     return appt
 
 
 def _notify_confirmed(appointment_id):
+    from apps.consult.services import on_appointment_confirmed
     from apps.notifications.tasks import notify_appointment_confirmed
 
+    on_appointment_confirmed(appointment_id)
     notify_appointment_confirmed.delay(appointment_id)
 
 
 def _release_seat(appt):
-    Slot.objects.filter(pk=appt.slot_id, booked_count__gt=0).update(booked_count=F("booked_count") - 1)
-    transaction.on_commit(lambda: refresh_first_free_slot(office=appt.office, center=appt.center))
+    if not appt.slot_id:
+        return
+    slot = appt.slot
+    Slot.objects.filter(pk=slot.pk, booked_count__gt=0).update(booked_count=F("booked_count") - 1)
+    transaction.on_commit(lambda: refresh_first_free_slot(office=slot.office, center=slot.center, doctor=slot.doctor))
 
 
 @transaction.atomic

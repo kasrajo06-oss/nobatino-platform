@@ -45,5 +45,35 @@ class KavenegarSmsBackend:
         self._call("verify/lookup", params, mobile, "otp", "کد ورود (lookup)")
 
 
+class SmsIrBackend:
+    """sms.ir v1 API: OTP via verify templates (parameter name CODE), other texts via bulk send."""
+
+    base = "https://api.sms.ir/v1"
+
+    def _post(self, path, payload, mobile, kind, text):
+        try:
+            r = requests.post(
+                f"{self.base}/{path}", json=payload, timeout=10,
+                headers={"x-api-key": settings.SMSIR_API_KEY, "Accept": "application/json"},
+            )
+            body = r.json()
+            ok = body.get("status") == 1
+            ref = str((body.get("data") or {}).get("messageId") or (body.get("data") or {}).get("packId") or "")
+            SmsLog.objects.create(
+                mobile=mobile, kind=kind, text=text, status=SmsLog.Status.SENT if ok else SmsLog.Status.FAILED,
+                provider_ref=ref, error="" if ok else str(body.get("message"))[:255],
+            )
+        except (requests.RequestException, ValueError) as e:
+            SmsLog.objects.create(mobile=mobile, kind=kind, text=text, status=SmsLog.Status.FAILED, error=str(e)[:255])
+
+    def send(self, mobile, text, kind="general"):
+        payload = {"lineNumber": settings.SMSIR_LINE_NUMBER, "messageText": text, "mobiles": [mobile]}
+        self._post("send/bulk", payload, mobile, kind, text)
+
+    def send_otp(self, mobile, code):
+        payload = {"mobile": mobile, "templateId": settings.SMSIR_OTP_TEMPLATE_ID, "parameters": [{"name": "CODE", "value": code}]}
+        self._post("send/verify", payload, mobile, "otp", "کد ورود (verify)")
+
+
 def get_backend():
     return import_string(settings.SMS_BACKEND)()

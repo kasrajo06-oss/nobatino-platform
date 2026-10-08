@@ -26,7 +26,7 @@ export default function Page() {
               {offices.data.map((o) => <option key={o.id} value={o.id}>{o.title} - {o.city_name}</option>)}
             </select>
           )}
-          {current && <ScheduleEditor base="/doctor-panel" office={current} />}
+          {current && <ScheduleEditor schedulesPath="/doctor-panel/schedules" exceptionsPath="/doctor-panel/exceptions" office={current} />}
         </>
       )}
     </>

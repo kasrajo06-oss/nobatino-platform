@@ -2,7 +2,7 @@ import { BadgeCheck, CalendarClock, Clock, IdCard, MapPin, Phone, ThumbsUp, User
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import DoctorBooking from "@/components/booking/DoctorBooking";
+import BookingTabs from "@/components/booking/BookingTabs";
 import ReviewList from "@/components/doctors/ReviewList";
 import Avatar from "@/components/ui/Avatar";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
@@ -64,7 +64,7 @@ export default async function DoctorPage({ params }: P) {
         <div className="space-y-6">
           <section className="card p-5">
             <div className="flex flex-col gap-5 sm:flex-row">
-              <Avatar src={d.photo} name={d.full_name} size={112} />
+              <Avatar src={d.photo} name={d.full_name} size={120} gender={d.gender} />
               <div className="flex-1 space-y-2">
                 <h1 className="text-2xl font-extrabold">{d.full_name}</h1>
                 <p className="text-brand-700">{d.specialties.map((s) => s.title).join(" | ")}</p>
@@ -114,7 +114,7 @@ export default async function DoctorPage({ params }: P) {
               <div className="grid gap-3 sm:grid-cols-2">
                 {d.endorsers.map((e) => (
                   <Link key={e.short_id} href={`/doctor/${e.slug}/${e.short_id}`} className="flex items-center gap-3 rounded-xl border border-line p-3 hover:border-brand-300">
-                    <Avatar src={e.photo} name={e.full_name} size={44} />
+                    <Avatar src={e.photo} name={e.full_name} size={44} gender={e.gender} />
                     <span className="min-w-0">
                       <b className="block truncate text-sm">{e.full_name}</b>
                       <span className="block truncate text-xs text-muted">{e.specialty}</span>
@@ -128,13 +128,13 @@ export default async function DoctorPage({ params }: P) {
 
         <aside id="booking" className="scroll-mt-20">
           <div className="card sticky top-20 space-y-4 p-5">
-            <h2 className="text-lg font-bold">دریافت نوبت</h2>
+            <h2 className="text-lg font-bold">{d.consult_services.length ? "دریافت نوبت و مشاوره" : "دریافت نوبت"}</h2>
             {d.first_free_slot_at && (
               <p className="flex items-center gap-1.5 text-sm text-emerald-700">
                 <CalendarClock className="size-4" /> اولین نوبت آزاد: {relativeSlot(d.first_free_slot_at)}
               </p>
             )}
-            <DoctorBooking shortId={d.short_id} offices={d.offices} />
+            <BookingTabs shortId={d.short_id} offices={d.offices} services={d.consult_services} availableNow={d.available_now} />
           </div>
         </aside>
       </div>

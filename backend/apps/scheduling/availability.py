@@ -24,8 +24,8 @@ def _day_label(d: date):
     }
 
 
-def availability_response(office=None, center=None, days=14):
-    owner = {"office": office, "center": None} if office else {"office": None, "center": center}
+def availability_response(office=None, center=None, doctor=None, days=14):
+    owner = {"office": office, "center": center, "doctor": doctor}
     today = timezone.localdate()
     counts = dict(
         Slot.objects.filter(
@@ -47,14 +47,14 @@ def availability_response(office=None, center=None, days=14):
     return {"office": office.id if office else None, "center": center.id if center else None, "days": result}
 
 
-def slots_response(request, office=None, center=None):
+def slots_response(request, office=None, center=None, doctor=None):
     raw = request.query_params.get("date")
     try:
         day = date.fromisoformat(raw) if raw else timezone.localdate()
     except ValueError as e:
         raise ValidationError({"date": "فرمت تاریخ نامعتبر است (YYYY-MM-DD)."}) from e
-    kind = AppointmentKind.LAB if center else AppointmentKind.IN_PERSON
-    slots = available_slots(office=office, center=center, date=day, kind=kind)
+    kind = AppointmentKind.LAB if center else AppointmentKind.ONLINE if doctor else AppointmentKind.IN_PERSON
+    slots = available_slots(office=office, center=center, doctor=doctor, date=day, kind=kind)
     return {
         **_day_label(day),
         "slots": [

@@ -15,7 +15,7 @@ export default function AppointmentRow({ a, actions, showPatient = false }: { a:
       <div className="grid gap-2 text-xs text-slate-600 sm:grid-cols-2">
         <span className="flex items-center gap-1.5"><CalendarClock className="size-4 text-brand-600" /> {faDateTime(a.start)}</span>
         <span className="flex items-center gap-1.5">کد پیگیری: <b className="tracking-wider">{faDigits(a.tracking_code)}</b></span>
-        {!showPatient && <span className="flex items-start gap-1.5 sm:col-span-2"><MapPin className="size-4 shrink-0 text-brand-600" /> {a.address}</span>}
+        {!showPatient && !a.is_online && <span className="flex items-start gap-1.5 sm:col-span-2"><MapPin className="size-4 shrink-0 text-brand-600" /> {a.address}</span>}
         {!showPatient && <span>بیمار: {a.patient_name}</span>}
         {showPatient && <span>کد ملی: {faDigits(a.patient_national_code)}</span>}
         {a.paid_amount > 0 && <span>پرداختی: {toman(a.paid_amount)}{a.refunded_amount > 0 && ` (مسترد: ${toman(a.refunded_amount)})`}</span>}
@@ -33,8 +33,9 @@ export default function AppointmentRow({ a, actions, showPatient = false }: { a:
           </div>
         </div>
       )}
-      {(actions || a.status === "pending_payment") && (
+      {(actions || a.status === "pending_payment" || a.is_online) && (
         <div className="flex flex-wrap gap-2 border-t border-dashed border-line pt-3">
+          {a.is_online && a.status !== "pending_payment" && <Link href={`/consult/${a.tracking_code}`} className="btn-outline py-2">اتاق مشاوره</Link>}
           {a.status === "pending_payment" && !showPatient && <Link href={`/booking/${a.tracking_code}`} className="btn-primary py-2">تکمیل پرداخت</Link>}
           {actions}
         </div>

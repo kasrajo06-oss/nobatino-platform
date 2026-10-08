@@ -23,6 +23,9 @@ x-backend-env: &backend-env
   SMS_BACKEND: ${SMS_BACKEND}
   KAVENEGAR_API_KEY: ${KAVENEGAR_API_KEY}
   KAVENEGAR_OTP_TEMPLATE: ${KAVENEGAR_OTP_TEMPLATE}
+  SMSIR_API_KEY: ${SMSIR_API_KEY:-}
+  SMSIR_OTP_TEMPLATE_ID: ${SMSIR_OTP_TEMPLATE_ID:-0}
+  SMSIR_LINE_NUMBER: ${SMSIR_LINE_NUMBER:-}
   AWS_STORAGE_BUCKET_NAME: media
   AWS_S3_ENDPOINT_URL: http://minio:9000
   AWS_S3_CUSTOM_DOMAIN: ${DOMAIN}/media
@@ -88,9 +91,20 @@ services:
         NEXT_PUBLIC_BRAND_NAME: ${BRAND_NAME}
         NEXT_PUBLIC_SITE_URL: https://${DOMAIN}
         NEXT_PUBLIC_SUPPORT_PHONE: ${SUPPORT_PHONE}
+        NEXT_PUBLIC_ICE_SERVERS: '[{"urls":"stun:${DOMAIN}:3478"},{"urls":"turn:${DOMAIN}:3478","username":"${TURN_USER}","credential":"${TURN_PASSWORD}"}]'
     restart: unless-stopped
     environment: { API_INTERNAL_URL: "http://backend:8000" }
     depends_on: [backend]
+
+  # TURN relay for in-browser phone/video consultations (many mobile networks block direct WebRTC)
+  coturn:
+    image: coturn/coturn:4.6.3
+    restart: unless-stopped
+    network_mode: host
+    command: >
+      -n --listening-port=3478 --fingerprint --lt-cred-mech
+      --user=${TURN_USER}:${TURN_PASSWORD} --realm=${DOMAIN}
+      --min-port=49160 --max-port=49200 --no-cli --no-tls --no-dtls
 
   nginx:
     image: nginx:1.27-alpine

@@ -16,6 +16,8 @@ from faker import Faker
 from apps.accounts.models import Gender, Role, User
 from apps.catalog.models import Degree, Insurance, Specialty
 from apps.centers.models import Center, CenterStaff, CenterType
+from apps.consult.models import ConsultService
+from apps.consult.services import sync_offer_flags
 from apps.doctors.models import DoctorProfile, Endorsement, Office, VerificationStatus
 from apps.geo.models import City
 from apps.lab.models import CenterLabTest, LabTest
@@ -64,6 +66,8 @@ class Command(BaseCommand):
             generate_slots(office=office, days=o["days"])
         for center in Center.objects.filter(online_reception=True):
             generate_slots(center=center, days=o["days"])
+        for doctor in DoctorProfile.objects.filter(consult_services__isnull=False).distinct():
+            generate_slots(doctor=doctor, days=o["days"])
         self.history(doctors, centers)
         self.stdout.write(self.style.SUCCESS(f"Done: {len(doctors)} doctors, {len(centers)} centers."))
 
@@ -211,6 +215,7 @@ class Command(BaseCommand):
             )
             doc.specialties.set([spec] + ([sub] if sub else []))
             doc.save()  # rebuild search_text with specialties
+            self.make_consult_services(doc, spec)
             for _ in range(1 if random.random() < 0.75 else 2):
                 center = random.choice(clinic_like) if clinic_like and random.random() < 0.25 else None
                 city = center.city if center else self.pick_city()
@@ -236,12 +241,41 @@ class Command(BaseCommand):
             for other in random.sample(doctors, k=min(len(doctors), random.randint(1, 8))):
                 if other != doc:
                     Endorsement.objects.get_or_create(from_doctor=other, to_doctor=doc)
-        # demo doctor login
+        # demo doctor login (offers all online consultation types)
         demo = doctors[0]
+        for kind, price in (("text", 150000), ("phone", 250000), ("video", 300000)):
+            ConsultService.objects.update_or_create(doctor=demo, kind=kind, defaults={"price": price, "instant_enabled": kind != "video"})
+        if not WeeklySchedule.objects.filter(doctor=demo).exists():
+            for wd in range(7):
+                WeeklySchedule.objects.create(doctor=demo, weekday=wd, start_time=time(9), end_time=time(23), slot_minutes=15, kind="online")
+        sync_offer_flags(demo)
         if demo.user.mobile != "09120000001" and not User.objects.filter(mobile="09120000001").exists():
             demo.user.mobile = "09120000001"
             demo.user.save(update_fields=["mobile"])
         return doctors
+
+    def make_consult_services(self, doc, spec):
+        """Psychology / GP / pediatrics etc. are the most common online specialties."""
+        online_heavy = spec.slug in ("psychology", "general-practitioner", "pediatrics", "gynecology", "internal-medicine", "psychiatry", "nutrition", "dermatology")
+        if random.random() > (0.75 if online_heavy else 0.3):
+            return
+        base = random.choice([150, 200, 250, 300, 400]) * 1000
+        kinds = ["text", "phone"] + (["video"] if random.random() < 0.4 else [])
+        for kind in kinds:
+            if kind != "text" and random.random() < 0.15:
+                continue
+            ConsultService.objects.create(
+                doctor=doc, kind=kind, price=int(base * {"text": 0.7, "phone": 1, "video": 1.3}[kind]),
+                duration_minutes=random.choice([10, 15, 20]), instant_enabled=kind != "video" and random.random() < 0.3,
+            )
+        for wd in random.sample(range(7), k=random.randint(3, 6)):
+            start_h = random.choice([8, 12, 18, 21])
+            WeeklySchedule.objects.create(doctor=doc, weekday=wd, start_time=time(start_h), end_time=time(start_h + 2), slot_minutes=15, kind="online")
+        if random.random() < 0.3:
+            doc.is_online_now = True
+            doc.online_seen_at = timezone.now()
+            doc.save(update_fields=["is_online_now", "online_seen_at"])
+        sync_offer_flags(doc)
 
     @transaction.atomic
     def history(self, doctors, centers):

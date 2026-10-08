@@ -11,12 +11,13 @@ const WEEKDAYS = ["شنبه", "یکشنبه", "دوشنبه", "سه‌شنبه",
 type Sched = { id: number; weekday: number; weekday_display: string; start_time: string; end_time: string; slot_minutes: number; capacity: number };
 type Exc = { id: number; date: string; start_time: string | null; end_time: string | null; reason: string };
 
-/** Weekly working hours + leave days. `base` = "/doctor-panel" or "/center-panel"; `office` scopes doctor schedules. */
-export default function ScheduleEditor({ base, office }: { base: string; office?: number }) {
+/** Weekly working hours + leave days for an office, a center, or a doctor's online-consult time. */
+export default function ScheduleEditor({ schedulesPath, exceptionsPath, office }: { schedulesPath: string; exceptionsPath: string; office?: number }) {
   const qc = useQueryClient();
   const q = office ? `?office=${office}` : "";
-  const schedules = useQuery({ queryKey: ["schedules", base, office], queryFn: () => get<Sched[]>(`${base}/schedules/${q}`) });
-  const exceptions = useQuery({ queryKey: ["exceptions", base, office], queryFn: () => get<Exc[]>(`${base}/exceptions/`) });
+  const base = schedulesPath;
+  const schedules = useQuery({ queryKey: ["schedules", base, office], queryFn: () => get<Sched[]>(`${schedulesPath}/${q}`) });
+  const exceptions = useQuery({ queryKey: ["exceptions", base, office], queryFn: () => get<Exc[]>(`${exceptionsPath}/`) });
   const [form, setForm] = useState({ weekday: "0", start_time: "16:00", end_time: "20:00", slot_minutes: "15", capacity: "1" });
   const [leave, setLeave] = useState({ date: "", start_time: "", end_time: "", reason: "" });
   const [error, setError] = useState("");
@@ -49,7 +50,7 @@ export default function ScheduleEditor({ base, office }: { base: string; office?
                 <td>{faDigits(s.end_time.slice(0, 5))}</td>
                 <td>{faDigits(s.slot_minutes)} دقیقه</td>
                 <td>{faDigits(s.capacity)}</td>
-                <td className="text-left"><button className="btn-ghost p-1.5 text-rose-600" aria-label="حذف" onClick={() => run(() => del(`${base}/schedules/${s.id}/`))}><Trash2 className="size-4" /></button></td>
+                <td className="text-left"><button className="btn-ghost p-1.5 text-rose-600" aria-label="حذف" onClick={() => run(() => del(`${schedulesPath}/${s.id}/`))}><Trash2 className="size-4" /></button></td>
               </tr>
             ))}
           </tbody>
@@ -64,7 +65,7 @@ export default function ScheduleEditor({ base, office }: { base: string; office?
             {[5, 10, 15, 20, 30, 45, 60].map((m) => <option key={m} value={m}>{faDigits(m)} دقیقه</option>)}
           </select>
           <input type="number" min={1} max={20} className="input" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} aria-label="ظرفیت" />
-          <button className="btn-primary" onClick={() => run(() => post(`${base}/schedules/`, { ...form, weekday: Number(form.weekday), slot_minutes: Number(form.slot_minutes), capacity: Number(form.capacity), ...(office ? { office } : {}) }))}>افزودن</button>
+          <button className="btn-primary" onClick={() => run(() => post(`${schedulesPath}/`, { ...form, weekday: Number(form.weekday), slot_minutes: Number(form.slot_minutes), capacity: Number(form.capacity), ...(office ? { office } : {}) }))}>افزودن</button>
         </div>
       </div>
 
@@ -74,7 +75,7 @@ export default function ScheduleEditor({ base, office }: { base: string; office?
           {exceptions.data?.map((x) => (
             <div key={x.id} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2 text-sm">
               <span className="flex-1">{faDate(x.date)} — {x.start_time ? `${faDigits(x.start_time.slice(0, 5))} تا ${faDigits(x.end_time!.slice(0, 5))}` : "کل روز"} {x.reason && `(${x.reason})`}</span>
-              <button className="btn-ghost p-1.5 text-rose-600" aria-label="حذف" onClick={() => run(() => del(`${base}/exceptions/${x.id}/`))}><Trash2 className="size-4" /></button>
+              <button className="btn-ghost p-1.5 text-rose-600" aria-label="حذف" onClick={() => run(() => del(`${exceptionsPath}/${x.id}/`))}><Trash2 className="size-4" /></button>
             </div>
           ))}
         </div>
@@ -83,7 +84,7 @@ export default function ScheduleEditor({ base, office }: { base: string; office?
           <input type="time" className="input" dir="ltr" value={leave.start_time} onChange={(e) => setLeave({ ...leave, start_time: e.target.value })} aria-label="از (اختیاری)" />
           <input type="time" className="input" dir="ltr" value={leave.end_time} onChange={(e) => setLeave({ ...leave, end_time: e.target.value })} aria-label="تا (اختیاری)" />
           <input className="input" placeholder="دلیل" value={leave.reason} onChange={(e) => setLeave({ ...leave, reason: e.target.value })} />
-          <button className="btn-outline" disabled={!leave.date} onClick={() => run(() => post(`${base}/exceptions/`, { ...leave, start_time: leave.start_time || null, end_time: leave.end_time || null, ...(office ? { office } : {}) }))}>ثبت مرخصی</button>
+          <button className="btn-outline" disabled={!leave.date} onClick={() => run(() => post(`${exceptionsPath}/`, { ...leave, start_time: leave.start_time || null, end_time: leave.end_time || null, ...(office ? { office } : {}) }))}>ثبت مرخصی</button>
         </div>
         <p className="mt-2 text-xs text-muted">ساعت را خالی بگذارید تا کل روز بسته شود. نوبت‌های رزروشده لغو نمی‌شوند؛ آن‌ها را از بخش نوبت‌ها مدیریت کنید.</p>
       </div>

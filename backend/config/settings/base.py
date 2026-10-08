@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.notifications",
     "apps.cms",
+    "apps.consult",
     "apps.ops",
 ]
 
@@ -162,6 +163,7 @@ CELERY_BEAT_SCHEDULE = {
     "release-expired-holds": {"task": "apps.scheduling.tasks.release_expired_holds", "schedule": 60},
     "appointment-reminders": {"task": "apps.notifications.tasks.send_reminders", "schedule": 15 * 60},
     "refresh-doctor-stats": {"task": "apps.reviews.tasks.refresh_all_stats", "schedule": 30 * 60},
+    "expire-consultations": {"task": "apps.consult.tasks.expire_consultations", "schedule": 60},
 }
 
 # OTP
@@ -169,11 +171,16 @@ OTP_LENGTH = 5
 OTP_TTL_SECONDS = 120
 OTP_MAX_ATTEMPTS = 5
 OTP_RESEND_SECONDS = 60
+# Show the OTP on the login page when no SMS provider is configured (never in production)
+OTP_SHOW_CODE = env.bool("OTP_SHOW_CODE", default=DEBUG)
 
 # SMS
 SMS_BACKEND = env("SMS_BACKEND", default="apps.notifications.sms.ConsoleSmsBackend")
 KAVENEGAR_API_KEY = env("KAVENEGAR_API_KEY", default="")
 KAVENEGAR_OTP_TEMPLATE = env("KAVENEGAR_OTP_TEMPLATE", default="verify")
+SMSIR_API_KEY = env("SMSIR_API_KEY", default="")
+SMSIR_OTP_TEMPLATE_ID = env.int("SMSIR_OTP_TEMPLATE_ID", default=0)
+SMSIR_LINE_NUMBER = env("SMSIR_LINE_NUMBER", default="")
 
 # Payments
 PAYMENT_GATEWAY = env("PAYMENT_GATEWAY", default="fake")  # fake | zarinpal

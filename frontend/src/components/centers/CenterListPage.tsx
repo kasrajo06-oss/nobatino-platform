@@ -5,6 +5,7 @@ import Pagination from "@/components/ui/Pagination";
 import { num } from "@/lib/format";
 import { qs, serverGet } from "@/lib/server-api";
 import type { CenterCard as Center, City, Paginated } from "@/lib/types";
+import { CenterIcon } from "@/lib/icons";
 import CenterCard from "./CenterCard";
 
 export const CENTER_TYPES: Record<string, string> = {
@@ -52,8 +53,8 @@ export default async function CenterListPage({
       <div className="mb-5 flex gap-2 overflow-x-auto pb-1">
         <Link href={href({}, "/centers")} className={`chip shrink-0 px-3 py-2 ${!type ? "bg-brand-600 text-white ring-brand-600" : "bg-white text-slate-700 ring-line"}`}>همه مراکز</Link>
         {stats.map((st) => (
-          <Link key={st.type} href={href({}, `/centers/type/${st.type}`)} className={`chip shrink-0 px-3 py-2 ${type === st.type ? "bg-brand-600 text-white ring-brand-600" : "bg-white text-slate-700 ring-line"}`}>
-            {CENTER_TYPES[st.type]} ({num(st.count)})
+          <Link key={st.type} href={href({}, `/centers/type/${st.type}`)} className={`chip shrink-0 px-4 py-2.5 text-sm ${type === st.type ? "bg-brand-600 text-white ring-brand-600" : "bg-white text-slate-700 ring-line"}`}>
+            <CenterIcon type={st.type} className="size-5" /> {CENTER_TYPES[st.type]} ({num(st.count)})
           </Link>
         ))}
       </div>

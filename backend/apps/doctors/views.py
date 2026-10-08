@@ -19,7 +19,7 @@ def public_doctors():
     return (
         DoctorProfile.objects.filter(is_active=True, verification_status=VerificationStatus.APPROVED)
         .select_related("degree", "primary_specialty")
-        .prefetch_related("specialties", Prefetch("offices", queryset=offices))
+        .prefetch_related("specialties", "consult_services", Prefetch("offices", queryset=offices))
     )
 
 
@@ -33,6 +33,9 @@ class DoctorViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_serializer_class(self):
         return DoctorDetailSerializer if self.action == "retrieve" else DoctorCardSerializer
+
+    def get_serializer_context(self):
+        return {**super().get_serializer_context(), "city": self.request.query_params.get("city")}
 
     def _office(self, doctor):
         office_id = self.request.query_params.get("office")
@@ -51,6 +54,14 @@ class DoctorViewSet(viewsets.ReadOnlyModelViewSet):
     def slots(self, request, short_id=None):
         doctor = self.get_object()
         return Response(slots_response(request, office=self._office(doctor)))
+
+    @action(detail=True, url_path="online-availability")
+    def online_availability(self, request, short_id=None):
+        return Response(availability_response(doctor=self.get_object()))
+
+    @action(detail=True, url_path="online-slots")
+    def online_slots(self, request, short_id=None):
+        return Response(slots_response(request, doctor=self.get_object()))
 
     @action(detail=True)
     def reviews(self, request, short_id=None):

@@ -1,15 +1,19 @@
 import { Clock, FlaskConical, Home, MapPin } from "lucide-react";
 import Link from "next/link";
-import Avatar from "@/components/ui/Avatar";
+import { CenterIcon } from "@/lib/icons";
 import Stars from "@/components/ui/Stars";
 import { relativeSlot } from "@/lib/format";
 import type { CenterCard as Center } from "@/lib/types";
 
 export default function CenterCard({ center: c }: { center: Center }) {
   return (
-    <article className="card flex flex-col gap-3 p-4 sm:p-5">
+    <article className="card flex flex-col gap-4 p-5 transition hover:-translate-y-0.5 hover:shadow-lg sm:p-6">
       <div className="flex gap-3">
-        <Avatar src={c.logo} name={c.name} size={56} className="rounded-2xl" />
+        {c.logo ? (
+          <img src={c.logo} alt={c.name} className="size-16 shrink-0 rounded-2xl object-cover" />
+        ) : (
+          <span className="grid size-16 shrink-0 place-items-center rounded-2xl bg-emerald-50 text-emerald-600"><CenterIcon type={c.type} className="size-9" /></span>
+        )}
         <div className="min-w-0 flex-1">
           <Link href={`/center/${c.slug}`}>
             <h3 className="truncate font-bold hover:text-brand-700">{c.name}</h3>

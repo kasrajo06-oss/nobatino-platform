@@ -1,9 +1,11 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL || "http://127.0.0.1:8000";
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  outputFileTracingRoot: path.resolve(__dirname),
   skipTrailingSlashRedirect: true,
   poweredByHeader: false,
   async rewrites() {

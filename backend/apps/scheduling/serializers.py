@@ -32,6 +32,8 @@ class AppointmentSerializer(serializers.ModelSerializer):
     can_cancel = serializers.SerializerMethodField()
     can_review = serializers.SerializerMethodField()
     lab_reception = LabReceptionSerializer(read_only=True)
+    is_online = serializers.BooleanField(read_only=True)
+    consult_state = serializers.SerializerMethodField()
 
     class Meta:
         model = Appointment
@@ -39,7 +41,7 @@ class AppointmentSerializer(serializers.ModelSerializer):
             "id", "tracking_code", "kind", "kind_display", "status", "status_display", "start", "provider_name",
             "provider_url", "specialty", "address", "phone", "patient_name", "patient_national_code",
             "patient_mobile", "price", "paid_amount", "refunded_amount", "held_until", "patient_note",
-            "cancel_reason", "can_cancel", "can_review", "lab_reception", "created_at",
+            "cancel_reason", "can_cancel", "can_review", "lab_reception", "is_online", "consult_state", "created_at",
         ]
 
     def get_provider_url(self, obj):
@@ -51,13 +53,21 @@ class AppointmentSerializer(serializers.ModelSerializer):
         return obj.doctor.primary_specialty.title if obj.doctor_id else obj.center.get_type_display()
 
     def get_address(self, obj):
-        return obj.office.address if obj.office_id else obj.center.address
+        if obj.office_id:
+            return obj.office.address
+        return obj.center.address if obj.center_id else "مشاوره آنلاین"
 
     def get_phone(self, obj):
-        return obj.office.phone if obj.office_id else obj.center.phone
+        if obj.office_id:
+            return obj.office.phone
+        return obj.center.phone if obj.center_id else ""
 
     def get_can_cancel(self, obj):
-        return obj.status in ("pending_payment", "confirmed") and obj.start > timezone.now()
+        return obj.status in ("pending_payment", "confirmed") and obj.start > timezone.now() and not obj.is_online
+
+    def get_consult_state(self, obj):
+        c = getattr(obj, "consultation", None) if obj.is_online else None
+        return c.state if c else None
 
     def get_can_review(self, obj):
         return obj.status == "attended" and not hasattr(obj, "review")

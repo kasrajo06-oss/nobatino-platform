@@ -10,6 +10,7 @@ from apps.catalog import views as catalog
 from apps.centers import panel as center_panel
 from apps.centers import views as centers
 from apps.cms import views as cms
+from apps.consult import views as consult
 from apps.core import search
 from apps.doctors import panel as doctor_panel
 from apps.doctors import views as doctors
@@ -51,6 +52,7 @@ me = Router()
 me.register("family", accounts.FamilyMemberViewSet, basename="family")
 me.register("appointments", scheduling.MyAppointmentViewSet, basename="my-appointment")
 me.register("reviews", reviews.MyReviewViewSet, basename="my-review")
+me.register("consultations", consult.ConsultationViewSet, basename="my-consultation")
 
 doctor_router = Router()
 doctor_router.register("documents", doctor_panel.DocumentViewSet, basename="dp-document")
@@ -59,6 +61,9 @@ doctor_router.register("schedules", doctor_panel.ScheduleViewSet, basename="dp-s
 doctor_router.register("exceptions", doctor_panel.ExceptionViewSet, basename="dp-exception")
 doctor_router.register("appointments", doctor_panel.AppointmentViewSet, basename="dp-appointment")
 doctor_router.register("reviews", doctor_panel.ReviewViewSet, basename="dp-review")
+doctor_router.register("consultations", consult.DoctorConsultationViewSet, basename="dp-consultation")
+doctor_router.register("online-schedules", consult.OnlineScheduleViewSet, basename="dp-online-schedule")
+doctor_router.register("online-exceptions", consult.OnlineExceptionViewSet, basename="dp-online-exception")
 
 center_router = Router()
 center_router.register("lab-tests", center_panel.LabTestPriceViewSet, basename="cp-labtest")
@@ -91,6 +96,7 @@ api = [
     # public helpers
     p("search/suggest", search.SuggestView.as_view()),
     p("stats", search.StatsView.as_view()),
+    p("home", search.HomeView.as_view()),
     # patient
     p("me", accounts.MeView.as_view()),
     p("me/wallet", payments.WalletView.as_view()),
@@ -106,6 +112,8 @@ api = [
     p("doctor-panel/submit", doctor_panel.SubmitForReviewView.as_view()),
     p("doctor-panel/dashboard", doctor_panel.DashboardView.as_view()),
     p("doctor-panel/finance", doctor_panel.FinanceView.as_view()),
+    p("doctor-panel/consult-services", consult.ConsultServicesView.as_view()),
+    p("doctor-panel/presence", consult.PresenceView.as_view()),
     re_path(r"^doctor-panel/endorse/(?P<short_id>[\w]+)/?$", doctor_panel.EndorseView.as_view()),
     path("doctor-panel/", include(doctor_router.urls)),
     # center panel

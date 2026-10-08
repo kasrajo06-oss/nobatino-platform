@@ -41,10 +41,11 @@ class CenterDoctorSerializer(serializers.ModelSerializer):
     photo = serializers.ImageField(source="doctor.photo")
     specialty = serializers.CharField(source="doctor.primary_specialty.title")
     rating_avg = serializers.DecimalField(source="doctor.rating_avg", max_digits=3, decimal_places=2)
+    gender = serializers.CharField(source="doctor.gender")
 
     class Meta:
         model = Office
-        fields = ["short_id", "slug", "full_name", "photo", "specialty", "rating_avg"]
+        fields = ["short_id", "slug", "full_name", "photo", "specialty", "rating_avg", "gender"]
 
 
 class CenterDetailSerializer(CenterCardSerializer):

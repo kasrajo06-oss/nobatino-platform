@@ -14,7 +14,11 @@ export default function SlotPicker({
   onDay,
   slot,
   onSlot,
+  availabilityPath = "availability",
+  slotsPath = "slots",
 }: {
+  availabilityPath?: string;
+  slotsPath?: string;
   base: string;
   extra?: string;
   day: string | null;
@@ -23,14 +27,14 @@ export default function SlotPicker({
   onSlot: (s: SlotItem) => void;
 }) {
   const availability = useQuery({
-    queryKey: ["availability", base, extra],
-    queryFn: () => get<{ days: DayAvailability[] }>(`${base}/availability/?${extra}`),
+    queryKey: ["availability", base, availabilityPath, extra],
+    queryFn: () => get<{ days: DayAvailability[] }>(`${base}/${availabilityPath}/?${extra}`),
   });
   const firstFree = availability.data?.days.find((d) => d.free > 0)?.date ?? null;
   const activeDay = day ?? firstFree;
   const slots = useQuery({
-    queryKey: ["slots", base, extra, activeDay],
-    queryFn: () => get<{ slots: SlotItem[] }>(`${base}/slots/?${extra}&date=${activeDay}`),
+    queryKey: ["slots", base, slotsPath, extra, activeDay],
+    queryFn: () => get<{ slots: SlotItem[] }>(`${base}/${slotsPath}/?${extra}&date=${activeDay}`),
     enabled: !!activeDay,
   });
 

@@ -13,6 +13,13 @@ const TYPES = [
   ["video", "ویدیویی"],
 ];
 
+export const TELE_SORTS = [
+  ["online_now", "آنلاین‌ها"],
+  ["popular", "محبوب‌ترین"],
+  ["nearest_online_slot", "نزدیک‌ترین زمان تماس"],
+  ["most_successful", "بیشترین مشاوره موفق"],
+];
+
 export const SORTS = [
   ["", "پیش‌فرض"],
   ["popular", "محبوب‌ترین"],
@@ -20,9 +27,24 @@ export const SORTS = [
   ["most_successful", "بیشترین نوبت موفق"],
 ];
 
-type Props = { specialties: Specialty[]; cities: City[]; insurances: Insurance[]; lockCity?: string; lockSpecialty?: string };
+type Props = {
+  specialties: Specialty[];
+  cities: City[];
+  insurances: Insurance[];
+  lockCity?: string;
+  lockSpecialty?: string;
+  telehealth?: boolean;
+  appointmentType?: string;
+};
 
-export default function DoctorFilters({ specialties, cities, insurances, lockCity, lockSpecialty }: Props) {
+const TELE_TYPES = [
+  ["", "همه"],
+  ["phone", "تلفنی"],
+  ["text", "متنی"],
+  ["video", "ویدیویی"],
+];
+
+export default function DoctorFilters({ specialties, cities, insurances, lockCity, lockSpecialty, telehealth, appointmentType }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
@@ -48,7 +70,51 @@ export default function DoctorFilters({ specialties, cities, insurances, lockCit
 
   const city = lockCity || "";
   const specialty = lockSpecialty || "";
-  const panel = (
+  const panel = telehealth ? (
+    <div className="space-y-5">
+      <div>
+        <span className="label">نوع مشاوره</span>
+        <div className="grid grid-cols-2 gap-1.5">
+          {TELE_TYPES.map(([v, l]) => (
+            <button
+              key={v}
+              onClick={() => {
+                const next = new URLSearchParams(sp.toString());
+                next.delete("page");
+                router.push(`/doctors/telehealth${v ? `/${v}` : ""}${next.size ? `?${next}` : ""}`);
+              }}
+              className={`rounded-lg py-2 text-xs font-medium ring-1 ${(appointmentType || "") === v ? "bg-brand-600 text-white ring-brand-600" : "bg-white text-slate-600 ring-line"}`}
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <label className="label" htmlFor="f-tspec">تخصص</label>
+        <select id="f-tspec" className="input" value={sp.get("specialty") || ""} onChange={(e) => set("specialty", e.target.value)}>
+          <option value="">همه تخصص‌ها</option>
+          {specialties.map((s) => (
+            <option key={s.id} value={s.slug}>{s.name}</option>
+          ))}
+        </select>
+      </div>
+      <div>
+        <span className="label">جنسیت پزشک</span>
+        <div className="grid grid-cols-3 gap-1.5">
+          {[["", "فرقی ندارد"], ["female", "خانم"], ["male", "آقا"]].map(([v, l]) => (
+            <button key={v} onClick={() => set("gender", v)} className={`rounded-lg py-2 text-xs font-medium ring-1 ${(sp.get("gender") || "") === v ? "bg-brand-600 text-white ring-brand-600" : "bg-white text-slate-600 ring-line"}`}>
+              {l}
+            </button>
+          ))}
+        </div>
+      </div>
+      <label className="flex cursor-pointer items-center justify-between rounded-xl bg-emerald-50 px-3 py-3 text-sm text-emerald-800">
+        فقط پزشکان آنلاین (مشاوره فوری)
+        <input type="checkbox" className="size-4 accent-emerald-600" checked={sp.get("online_now") === "true"} onChange={(e) => set("online_now", e.target.checked ? "true" : "")} />
+      </label>
+    </div>
+  ) : (
     <div className="space-y-5">
       <div>
         <span className="label">نوع نوبت</span>
@@ -142,15 +208,16 @@ export default function DoctorFilters({ specialties, cities, insurances, lockCit
   );
 }
 
-export function SortBar() {
+export function SortBar({ telehealth = false }: { telehealth?: boolean }) {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  const current = sp.get("ordering") || "";
+  const sorts = telehealth ? TELE_SORTS : SORTS;
+  const current = sp.get("ordering") || (telehealth ? "online_now" : "");
   return (
     <div className="flex items-center gap-1 overflow-x-auto text-sm">
       <span className="shrink-0 text-muted">مرتب‌سازی:</span>
-      {SORTS.map(([v, l]) => (
+      {sorts.map(([v, l]) => (
         <button
           key={v}
           onClick={() => {

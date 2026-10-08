@@ -33,11 +33,17 @@ def _appt(appointment_id):
 @shared_task
 def notify_appointment_confirmed(appointment_id):
     a = _appt(appointment_id)
-    where = a.office.address if a.office_id else a.center.address
-    text = (
-        f"{settings.BRAND_NAME}: نوبت {a.patient_name} نزد {a.provider_name} برای {fa_datetime(a.start)} ثبت شد.\n"
-        f"کد پیگیری: {a.tracking_code}\nآدرس: {where}"
-    )
+    if a.is_online:
+        text = (
+            f"{settings.BRAND_NAME}: {a.get_kind_display()} {a.patient_name} با {a.provider_name} ثبت شد.\n"
+            f"کد پیگیری: {a.tracking_code}\nورود به اتاق مشاوره: {settings.SITE_URL}/consult/{a.tracking_code}"
+        )
+    else:
+        where = a.office.address if a.office_id else a.center.address
+        text = (
+            f"{settings.BRAND_NAME}: نوبت {a.patient_name} نزد {a.provider_name} برای {fa_datetime(a.start)} ثبت شد.\n"
+            f"کد پیگیری: {a.tracking_code}\nآدرس: {where}"
+        )
     get_backend().send(a.patient_mobile, text, "appointment_confirmed")
 
 

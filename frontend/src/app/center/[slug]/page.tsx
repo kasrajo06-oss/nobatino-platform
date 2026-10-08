@@ -5,6 +5,7 @@ import { notFound } from "next/navigation";
 import LabBooking from "@/components/booking/LabBooking";
 import { CENTER_TYPES } from "@/components/centers/CenterListPage";
 import Avatar from "@/components/ui/Avatar";
+import { CenterIcon } from "@/lib/icons";
 import Breadcrumbs from "@/components/ui/Breadcrumbs";
 import JsonLd from "@/components/ui/JsonLd";
 import MapEmbed from "@/components/ui/MapEmbed";
@@ -46,7 +47,11 @@ export default async function CenterPage({ params }: P) {
         <div className="space-y-6">
           <section className="card p-5">
             <div className="flex gap-4">
-              <Avatar src={c.logo} name={c.name} size={88} className="rounded-2xl" />
+              {c.logo ? (
+                <Avatar src={c.logo} name={c.name} size={88} className="rounded-2xl" />
+              ) : (
+                <span className="grid size-22 shrink-0 place-items-center rounded-3xl bg-emerald-50 text-emerald-600"><CenterIcon type={c.type} className="size-12" /></span>
+              )}
               <div className="space-y-1.5">
                 <h1 className="text-2xl font-extrabold">{c.name}</h1>
                 <p className="text-sm text-brand-700">{c.type_display}{c.is_public_sector ? " · دولتی" : " · خصوصی"}</p>
@@ -82,7 +87,7 @@ export default async function CenterPage({ params }: P) {
               <div className="grid gap-3 sm:grid-cols-2">
                 {c.doctors.map((d) => (
                   <Link key={d.short_id} href={`/doctor/${d.slug}/${d.short_id}`} className="flex items-center gap-3 rounded-xl border border-line p-3 hover:border-brand-300">
-                    <Avatar src={d.photo} name={d.full_name} size={44} />
+                    <Avatar src={d.photo} name={d.full_name} size={44} gender={d.gender} />
                     <span className="min-w-0">
                       <b className="block truncate text-sm">{d.full_name}</b>
                       <span className="block truncate text-xs text-muted">{d.specialty}</span>
