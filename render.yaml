@@ -1,0 +1,20 @@
+# One-click public demo on Render's free plan (no server or domain needed):
+#   Render dashboard → New → Blueprint → pick this repository.
+# Free services sleep after ~15 minutes without visitors; the next visit wakes them (~1 minute).
+# Data is fake and resets on every restart. Guide: docs/16-free-demo-hosting.md
+services:
+  - type: web
+    name: nobatino-demo
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerfilePath: ./deploy/demo/Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/provinces/
+    autoDeploy: true
+    envVars:
+      - key: DJANGO_SECRET_KEY
+        generateValue: true
+      # change if Render gives the service a different address
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://nobatino-demo.onrender.com

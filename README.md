@@ -6,6 +6,8 @@
 
 > A full-stack Persian (RTL) medical booking & telehealth platform — Django REST + Next.js, PostgreSQL, Redis/Celery, WebRTC video calls, Docker deployment. Patient, doctor, clinic/lab and operator panels.
 
+**🌐 [صفحه معرفی و تصاویر](https://kasrajo06-oss.github.io/nobatino-platform/)** · **▶️ [نسخه نمایشی زنده](https://nobatino-demo.onrender.com)** (داده‌های ساختگی؛ اولین باز شدن تا یک دقیقه طول می‌کشد)
+
 ![صفحه اصلی](docs/images/home.png)
 
 ## امکانات
@@ -79,6 +81,7 @@ npm run dev
 | [مرجع API](docs/06-api-reference.md) | [امنیت](docs/12-security.md) |
 | [تست](docs/13-testing.md) | [استقرار](docs/14-deployment-operations.md) |
 | [آنلاین کردن سایت (DEPLOY)](DEPLOY.md) | [نقشه راه](docs/15-roadmap.md) |
+| [نسخه نمایشی رایگان](docs/16-free-demo-hosting.md) | |
 
 ## ساختار مخزن
 
@@ -86,6 +89,8 @@ npm run dev
 backend/    Django REST API، منطق کسب‌وکار، Celery، تست‌ها، داده مرجع
 frontend/   Next.js، صفحات عمومی و پنل‌ها، تست‌های E2E
 infra/      Docker Compose توسعه و production، nginx، اسکریپت‌های سرور
+deploy/     نسخه نمایشی تک‌کانتینری برای میزبان‌های رایگان (render.yaml)
+site/       صفحه معرفی GitHub Pages
 docs/       مستندات
 ```
 

@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/api/:path*", destination: `${API_INTERNAL_URL}/api/:path*` },
       { source: "/media/:path*", destination: `${API_INTERNAL_URL}/media/:path*` },
+      // only reached without nginx in front (single-container demo); nginx routes these itself
+      { source: "/admin/:path*", destination: `${API_INTERNAL_URL}/admin/:path*` },
+      { source: "/static/:path*", destination: `${API_INTERNAL_URL}/static/:path*` },
     ];
   },
 };

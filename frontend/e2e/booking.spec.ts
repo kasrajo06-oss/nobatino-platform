@@ -28,6 +28,7 @@ test("patient searches, books, pays and sees the appointment", async ({ page }) 
   const title = page.getByRole("heading", { level: 1 });
   if ((await title.textContent())?.includes("تکمیل رزرو")) {
     await page.getByRole("button", { name: /پرداخت و ثبت نهایی|ثبت نهایی با کیف پول/ }).click();
+    await page.waitForURL(/fake-gateway|payment\/result/);
     if (page.url().includes("fake-gateway")) await page.getByRole("link", { name: "پرداخت موفق" }).click();
     await page.waitForURL(/\/payment\/result/);
     await expect(page.getByRole("heading", { name: "پرداخت موفق بود" })).toBeVisible();
@@ -66,7 +67,7 @@ test("lab reception booking from a center page", async ({ page }) => {
     await Promise.race([page.waitForURL(/\/booking\//, { timeout: 5000 }).catch(() => undefined), page.getByText("در همین روز نوبت فعال").waitFor({ timeout: 5000 }).catch(() => undefined)]);
   }
   await page.waitForURL(/\/booking\//);
-  await expect(page.getByText("کد پیگیری")).toBeVisible();
+  await expect(page.getByText("کد پیگیری", { exact: true })).toBeVisible();
 });
 
 test("home page is usable at phone width", async ({ page }) => {
@@ -155,8 +156,8 @@ test("video consultation: doctor calls, patient answers, media flows both ways",
   const start = await patient.evaluate(async (c) => (await fetch("/api/payments/start/", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tracking_code: c, use_wallet: false }),
   })).json(), code);
-  const callback = new URL(start.redirect_url).searchParams.get("callback")!;
-  const authority = new URL(start.redirect_url).searchParams.get("authority")!;
+  const callback = new URL(start.redirect_url, patient.url()).searchParams.get("callback")!;
+  const authority = new URL(start.redirect_url, patient.url()).searchParams.get("authority")!;
   await patient.goto(`${callback}&Authority=${authority}&Status=OK`);
   await patient.goto(`/consult/${code}`);
 
@@ -236,7 +237,7 @@ test("notifications: message toast + bell badge, incoming call popup on another 
   const start = await patient.evaluate(async (c) => (await fetch("/api/payments/start/", {
     method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tracking_code: c, use_wallet: false }),
   })).json(), code);
-  const u = new URL(start.redirect_url);
+  const u = new URL(start.redirect_url, patient.url());
   await patient.goto(`${u.searchParams.get("callback")}&Authority=${u.searchParams.get("authority")}&Status=OK`);
 
   // the doctor sits on the panel home (not in the room)

@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>نوبتینو — نسخه نمایشی</title>
+<meta name="description" content="پلتفرم نوبت‌دهی پزشکی و مشاوره آنلاین: نوبت مطب، مشاوره متنی و تصویری، آزمایشگاه آنلاین، کلینیک و پنل‌های بیمار، پزشک، مرکز و اپراتور. نسخه نمایشی با داده‌های ساختگی.">
+<meta property="og:title" content="نوبتینو — پلتفرم نوبت‌دهی پزشکی و مشاوره آنلاین">
+<meta property="og:description" content="نسخه نمایشی زنده و کد کامل پروژه (Django REST + Next.js)">
+<meta property="og:image" content="images/home.png">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --brand-50: #effcfc; --brand-100: #d6f5f6; --brand-500: #22a2b0; --brand-600: #1d8394; --brand-700: #1d6978; --brand-800: #1f5663;
+  --bg: #f6f8fa; --surface: #ffffff; --ink: #0f172a; --muted: #64748b; --line: #e2e8f0;
+  --accent-bg: var(--brand-50); --accent-ink: var(--brand-800);
+  --ok: #059669; --warn: #d97706; --bad: #dc2626;
+  --shadow: 0 1px 2px rgb(15 23 42 / .05), 0 8px 24px rgb(15 23 42 / .06);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1418; --surface: #111e23; --ink: #e6eef0; --muted: #94a8ae; --line: #22343a;
+    --accent-bg: #12303a; --accent-ink: #b1eaee; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1418; --surface: #111e23; --ink: #e6eef0; --muted: #94a8ae; --line: #22343a;
+  --accent-bg: #12303a; --accent-ink: #b1eaee; --shadow: 0 1px 2px rgb(0 0 0 / .3), 0 8px 24px rgb(0 0 0 / .25);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: Vazirmatn, Tahoma, sans-serif; line-height: 1.8; -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; height: auto; display: block; }
+a { color: inherit; }
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 16px; }
+.ltr { direction: ltr; unicode-bidi: isolate; font-family: ui-monospace, Consolas, monospace; }
+
+/* header */
+header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 64px; gap: 12px; }
+.logo { display: flex; align-items: center; gap: 8px; text-decoration: none; font-weight: 800; font-size: 1.25rem; color: var(--accent-ink); }
+.logo span.mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 12px; background: var(--brand-600); color: #fff; }
+nav.links { display: flex; gap: 4px; }
+nav.links a { text-decoration: none; padding: 6px 12px; border-radius: 10px; color: var(--muted); font-weight: 500; }
+nav.links a:hover { background: var(--accent-bg); color: var(--accent-ink); }
+@media (max-width: 760px) { nav.links { display: none; } }
+
+/* buttons */
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 12px 22px; border-radius: 14px; font: inherit; font-weight: 700; text-decoration: none; cursor: pointer; border: 1px solid transparent; transition: transform .15s, background .15s; }
+.btn:hover { transform: translateY(-1px); }
+.btn-primary { background: var(--brand-600); color: #fff; box-shadow: 0 6px 18px rgb(29 131 148 / .3); }
+.btn-primary:hover { background: var(--brand-700); }
+.btn-outline { background: var(--surface); color: var(--ink); border-color: var(--line); }
+.btn-sm { padding: 8px 14px; border-radius: 12px; font-size: .9rem; }
+
+/* hero */
+.hero { padding: 56px 0 32px; background: radial-gradient(900px 400px at 85% -10%, color-mix(in srgb, var(--brand-500) 22%, transparent), transparent 70%); }
+.hero .wrap { display: grid; grid-template-columns: 1fr 1.15fr; gap: 40px; align-items: center; }
+@media (max-width: 900px) { .hero .wrap { grid-template-columns: 1fr; } }
+.eyebrow { display: inline-block; padding: 4px 12px; border-radius: 999px; background: var(--accent-bg); color: var(--accent-ink); font-size: .85rem; font-weight: 700; }
+h1 { font-size: clamp(1.9rem, 4vw, 2.8rem); line-height: 1.35; margin: 14px 0 12px; font-weight: 800; }
+.lead { color: var(--muted); font-size: 1.08rem; margin: 0 0 24px; }
+.cta { display: flex; flex-wrap: wrap; gap: 12px; }
+.status { margin-top: 18px; display: flex; align-items: center; gap: 8px; font-size: .9rem; color: var(--muted); }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); box-shadow: 0 0 0 4px color-mix(in srgb, var(--warn) 20%, transparent); }
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 4px color-mix(in srgb, var(--ok) 20%, transparent); }
+.dot.bad { background: var(--bad); box-shadow: 0 0 0 4px color-mix(in srgb, var(--bad) 20%, transparent); }
+.dot.pulse { animation: pulse 1.2s infinite; }
+@keyframes pulse { 50% { opacity: .35; } }
+
+.browser { border-radius: 16px; overflow: hidden; background: var(--surface); border: 1px solid var(--line); box-shadow: var(--shadow); }
+.browser .bar { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--line); direction: ltr; }
+.browser .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+.browser .bar .url { flex: 1; margin-left: 8px; padding: 2px 10px; border-radius: 8px; background: var(--bg); color: var(--muted); font-size: .78rem; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+
+/* sections */
+section { padding: 56px 0; }
+h2 { font-size: clamp(1.4rem, 3vw, 1.9rem); margin: 0 0 8px; font-weight: 800; }
+.sub { color: var(--muted); margin: 0 0 28px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; box-shadow: var(--shadow); }
+
+.features { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; }
+.feature { padding: 20px; }
+.feature .ic { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--accent-bg); color: var(--accent-ink); margin-bottom: 10px; }
+.feature h3 { margin: 0 0 4px; font-size: 1.05rem; }
+.feature p { margin: 0; color: var(--muted); font-size: .93rem; }
+
+/* demo accounts */
+.demo { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 860px) { .demo { grid-template-columns: 1fr; } }
+.demo .card { padding: 24px; }
+ol.steps { margin: 0; padding-inline-start: 22px; }
+ol.steps li { margin-bottom: 8px; }
+table { width: 100%; border-collapse: collapse; }
+td, th { padding: 10px 8px; border-bottom: 1px solid var(--line); text-align: start; }
+th { color: var(--muted); font-weight: 500; font-size: .9rem; }
+tr:last-child td { border-bottom: 0; }
+.copy { font: inherit; font-size: .8rem; padding: 2px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--bg); color: var(--muted); cursor: pointer; }
+.note { margin-top: 16px; padding: 12px 14px; border-radius: 12px; background: var(--accent-bg); color: var(--accent-ink); font-size: .9rem; }
+
+/* gallery */
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.tab { font: inherit; padding: 8px 16px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); cursor: pointer; font-weight: 500; }
+.tab[aria-selected="true"] { background: var(--brand-600); border-color: var(--brand-600); color: #fff; }
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 18px; }
+@media (max-width: 380px) { .gallery { grid-template-columns: 1fr; } }
+.shot { padding: 0; overflow: hidden; cursor: zoom-in; text-align: start; font: inherit; color: inherit; }
+.shot img { aspect-ratio: 16 / 10; object-fit: cover; object-position: top; width: 100%; border-bottom: 1px solid var(--line); }
+.shot .cap { padding: 12px 16px; }
+.shot .cap b { display: block; }
+.shot .cap span { color: var(--muted); font-size: .88rem; }
+.fullpage { display: grid; grid-template-columns: 1fr 300px; gap: 24px; align-items: start; }
+@media (max-width: 860px) { .fullpage { grid-template-columns: 1fr; } }
+.scroller { height: 560px; overflow-y: auto; }
+.phone { border: 10px solid #0f172a; border-radius: 36px; overflow: hidden; box-shadow: var(--shadow); max-width: 300px; margin: 0 auto; }
+
+dialog { border: 0; padding: 0; border-radius: 16px; max-width: min(1200px, 94vw); max-height: 92vh; background: var(--surface); box-shadow: 0 30px 80px rgb(0 0 0 / .4); }
+dialog::backdrop { background: rgb(2 6 23 / .7); }
+dialog img { max-height: calc(92vh - 56px); width: auto; margin: 0 auto; }
+dialog .head { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+dialog button.x { font: inherit; border: 0; background: none; color: var(--muted); font-size: 1.4rem; cursor: pointer; }
+
+/* stack */
+.stack { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 860px) { .stack { grid-template-columns: 1fr; } }
+.stack .card { padding: 20px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; direction: ltr; justify-content: flex-end; }
+.chip { padding: 3px 10px; border-radius: 999px; background: var(--bg); border: 1px solid var(--line); font-size: .82rem; }
+
+footer { padding: 32px 0 48px; border-top: 1px solid var(--line); color: var(--muted); font-size: .9rem; }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between; }
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <a class="logo" href="#">
+      <span class="mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span>
+      نوبتینو
+    </a>
+    <nav class="links">
+      <a href="#features">امکانات</a>
+      <a href="#try">امتحان کنید</a>
+      <a href="#screens">تصاویر</a>
+      <a href="#stack">فناوری</a>
+    </nav>
+    <a class="btn btn-primary btn-sm" data-demo-link href="#" target="_blank" rel="noopener">ورود به سایت</a>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <div>
+        <span class="eyebrow">پروژه نمونه · نسخه نمایشی زنده</span>
+        <h1>نوبت‌دهی پزشکی و مشاوره آنلاین، در یک پلتفرم</h1>
+        <p class="lead">جستجو و رزرو نوبت مطب، مشاوره متنی، تلفنی و تصویری، پذیرش آنلاین آزمایشگاه، خرید پکیج خدمات و مجله سلامت؛ با پنل جداگانه برای بیمار، پزشک، مرکز درمانی و اپراتور.</p>
+        <div class="cta">
+          <a class="btn btn-primary" data-demo-link href="#" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M8 7h9v9"/></svg>
+            باز کردن نسخه نمایشی
+          </a>
+          <a class="btn btn-outline" href="https://github.com/kasrajo06-oss/nobatino-platform" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .5a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2c-3.3.7-4-1.6-4-1.6-.6-1.4-1.4-1.8-1.4-1.8-1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 0-.8.4-1.3.7-1.6-2.7-.3-5.5-1.3-5.5-5.9 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0C17.3 4.7 18.3 5 18.3 5c.7 1.7.2 2.9.1 3.2.8.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.6-5.5 5.9.4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .5Z"/></svg>
+            کد روی گیت‌هاب
+          </a>
+        </div>
+        <div class="status" id="status"><span class="dot pulse"></span><span>در حال بررسی وضعیت سرور نمایشی…</span></div>
+      </div>
+      <div class="browser">
+        <div class="bar"><i></i><i></i><i></i><span class="url" data-demo-host>nobatino-demo.onrender.com</span></div>
+        <img src="images/home.png" alt="صفحه اصلی نوبتینو" width="1440" height="900">
+      </div>
+    </div>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <h2>امکانات</h2>
+      <p class="sub">همه بخش‌ها در نسخه نمایشی کار می‌کنند؛ از جستجو تا رزرو، پرداخت آزمایشی و تماس تصویری.</p>
+      <div class="features" id="features-grid"></div>
+    </div>
+  </section>
+
+  <section id="try" style="background: var(--surface); border-block: 1px solid var(--line);">
+    <div class="wrap">
+      <h2>خودتان امتحان کنید</h2>
+      <p class="sub">برای ورود به سایت پیامک لازم نیست؛ در نسخه نمایشی کد ورود روی صفحه نشان داده می‌شود.</p>
+      <div class="demo">
+        <div class="card">
+          <h3 style="margin-top:0">چطور وارد شوم؟</h3>
+          <ol class="steps">
+            <li>دکمه <b>باز کردن نسخه نمایشی</b> را بزنید. اگر سرور خواب باشد، اولین بار تا حدود یک دقیقه طول می‌کشد.</li>
+            <li>از منوی بالا <b>ورود</b> را بزنید.</li>
+            <li>روی یکی از <b>حساب‌های نمایشی</b> بزنید (یا هر شماره موبایلی را وارد کنید تا حساب بیمار تازه بسازید).</li>
+            <li>کد پنج‌رقمی در کادر زرد نشان داده می‌شود؛ آن را وارد کنید.</li>
+            <li>یک پزشک را جستجو کنید، نوبت بگیرید و پرداخت آزمایشی را تأیید کنید. بعد با حساب پزشک همان نوبت را ببینید.</li>
+          </ol>
+          <div class="note">برای امتحان تماس تصویری: در دو مرورگر (یا یک پنجره ناشناس) یکی با حساب بیمار و دیگری با حساب پزشک وارد شوید و مشاوره تصویری بگیرید.</div>
+        </div>
+        <div class="card">
+          <h3 style="margin-top:0">حساب‌های نمایشی</h3>
+          <table>
+            <thead><tr><th>نقش</th><th>شماره موبایل</th><th></th></tr></thead>
+            <tbody id="accounts"></tbody>
+          </table>
+          <div class="note">همه پزشکان، مراکز و بیماران ساختگی‌اند. داده‌ها با هر بار راه‌اندازی دوباره سرور به حالت اول برمی‌گردند؛ اطلاعات واقعی وارد نکنید.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="screens">
+    <div class="wrap">
+      <h2>تصاویر</h2>
+      <p class="sub">روی هر تصویر بزنید تا بزرگ شود.</p>
+      <div class="tabs" role="tablist" id="tabs"></div>
+      <div class="gallery" id="gallery"></div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap fullpage">
+      <div>
+        <h2>صفحه اصلی کامل</h2>
+        <p class="sub">داخل کادر اسکرول کنید.</p>
+        <div class="browser">
+          <div class="bar"><i></i><i></i><i></i><span class="url" data-demo-host>nobatino-demo.onrender.com</span></div>
+          <div class="scroller"><img src="images/home-full.png" alt="صفحه اصلی کامل" loading="lazy" width="1440" height="9829"></div>
+        </div>
+      </div>
+      <div>
+        <h2>موبایل</h2>
+        <p class="sub">طراحی واکنش‌گرا برای همه اندازه‌ها.</p>
+        <div class="phone"><img src="images/mobile-home.png" alt="نسخه موبایل" loading="lazy" width="390" height="844"></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="stack" style="background: var(--surface); border-block: 1px solid var(--line);">
+    <div class="wrap">
+      <h2>فناوری‌ها</h2>
+      <p class="sub">کد کامل، مستندات و تست‌ها در مخزن گیت‌هاب است.</p>
+      <div class="stack">
+        <div class="card"><b>بک‌اند</b><div class="chips"><span class="chip">Python 3.12</span><span class="chip">Django 5.1</span><span class="chip">DRF</span><span class="chip">PostgreSQL 16</span><span class="chip">Redis</span><span class="chip">Celery</span><span class="chip">JWT</span></div></div>
+        <div class="card"><b>فرانت‌اند</b><div class="chips"><span class="chip">Next.js 15</span><span class="chip">React 19</span><span class="chip">TypeScript</span><span class="chip">Tailwind CSS 4</span><span class="chip">TanStack Query</span><span class="chip">WebRTC</span></div></div>
+        <div class="card"><b>زیرساخت و تست</b><div class="chips"><span class="chip">Docker</span><span class="chip">nginx</span><span class="chip">Let's Encrypt</span><span class="chip">MinIO</span><span class="chip">coturn</span><span class="chip">GitHub Actions</span><span class="chip">pytest</span><span class="chip">Playwright</span></div></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>نوبتینو — پروژه نمونه با داده‌های ساختگی. هیچ خدمت پزشکی واقعی ارائه نمی‌شود.</span>
+    <a href="https://github.com/kasrajo06-oss/nobatino-platform" target="_blank" rel="noopener">github.com/kasrajo06-oss/nobatino-platform</a>
+  </div>
+</footer>
+
+<dialog id="lightbox">
+  <div class="head"><b id="lb-title"></b><button class="x" aria-label="بستن" onclick="this.closest('dialog').close()">×</button></div>
+  <img id="lb-img" alt="">
+</dialog>
+
+<script>
+// Replaced by the Pages workflow with the repository variable DEMO_URL (Settings → Secrets and variables → Actions → Variables).
+const CONFIGURED_DEMO_URL = "__DEMO_URL__";
+const DEMO_URL = (CONFIGURED_DEMO_URL.startsWith("__") ? "https://nobatino-demo.onrender.com" : CONFIGURED_DEMO_URL).replace(/\/+$/, "");
+
+document.querySelectorAll("[data-demo-link]").forEach((a) => (a.href = DEMO_URL));
+document.querySelectorAll("[data-demo-host]").forEach((el) => (el.textContent = new URL(DEMO_URL).host));
+
+const icon = (d) => `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+const FEATURES = [
+  ["جستجو و نوبت مطب", "بر اساس شهر، تخصص، بیماری و نام؛ فیلتر بیمه، جنسیت و نوبت باز؛ رزرو آنی بدون تداخل.", '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>'],
+  ["مشاوره آنلاین", "چت متنی با عکس و PDF، تماس صوتی و تصویری داخل مرورگر و مشاوره فوری با پزشکان آنلاین.", '<path d="M15 10l5-3v10l-5-3z"/><rect x="3" y="6" width="12" height="12" rx="2"/>'],
+  ["آزمایشگاه آنلاین", "انتخاب آزمایش یا بارگذاری نسخه، نمونه‌گیری در منزل و دریافت جواب در پنل.", '<path d="M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3"/>'],
+  ["مراکز درمانی", "بیمارستان، کلینیک، درمانگاه، تصویربرداری و داروخانه با پزشکان و خدمات هر مرکز.", '<path d="M3 21h18M5 21V7l7-4 7 4v14M10 9h4M12 7v4"/>'],
+  ["کلینیک", "خرید آنلاین پکیج خدمات با تخفیف و دریافت کد استفاده.", '<path d="M20 12v8H4v-8M2 7h20v5H2zM12 22V7M12 7S10 2 7.5 3.5 9 7 12 7m0 0s2-5 4.5-3.5S15 7 12 7"/>'],
+  ["مجله سلامت", "مقالات با بازبینی علمی پزشک و پیشنهاد پزشکان مرتبط.", '<path d="M4 19V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-2zM8 7h6M8 11h6"/>'],
+  ["اعلان‌ها", "زنگوله اعلان، اعلان دسکتاپ و پنجره تماس ورودی برای پیام و تماس تصویری.", '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10 21a2 2 0 0 0 4 0"/>'],
+  ["پرداخت و کیف پول", "درگاه پرداخت، کیف پول، استرداد خودکار هنگام لغو و تسویه با پزشکان.", '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'],
+  ["چهار پنل مدیریت", "پنل بیمار، پزشک، مرکز درمانی و اپراتور با داشبورد، گزارش و گزارش تغییرات.", '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>'],
+  ["ورود با موبایل", "بدون رمز عبور؛ ورود با کد یک‌بار مصرف و محدودیت تلاش.", '<rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/>'],
+];
+document.getElementById("features-grid").innerHTML = FEATURES.map(([t, d, i]) =>
+  `<div class="card feature"><div class="ic">${icon(i)}</div><h3>${t}</h3><p>${d}</p></div>`).join("");
+
+const ACCOUNTS = [["بیمار", "09120000003"], ["پزشک", "09120000001"], ["آزمایشگاه (مرکز)", "09120000002"], ["اپراتور", "09120000000"]];
+document.getElementById("accounts").innerHTML = ACCOUNTS.map(([r, m]) =>
+  `<tr><td>${r}</td><td><span class="ltr">${m}</span></td><td style="text-align:left"><button class="copy" data-copy="${m}">کپی</button></td></tr>`).join("");
+document.addEventListener("click", async (e) => {
+  const b = e.target.closest("[data-copy]");
+  if (!b) return;
+  try { await navigator.clipboard.writeText(b.dataset.copy); b.textContent = "کپی شد"; } catch { b.textContent = b.dataset.copy; }
+  setTimeout(() => (b.textContent = "کپی"), 1500);
+});
+
+const SHOTS = {
+  "صفحات عمومی": [
+    ["home", "صفحه اصلی", "جستجوی شهر، تخصص و بیماری"],
+    ["mega-menu", "منوی بازشونده", "دسترسی سریع به تخصص‌ها و خدمات"],
+    ["doctor-list", "فهرست پزشکان", "فیلتر، مرتب‌سازی و اولین نوبت آزاد"],
+    ["doctor-profile", "پروفایل پزشک", "مطب‌ها، تقویم نوبت و نظرات"],
+    ["telehealth", "مشاوره آنلاین", "پزشکان آنلاین و مشاوره فوری"],
+    ["labs", "آزمایشگاه‌ها", "پذیرش آنلاین و نمونه‌گیری در منزل"],
+    ["clinic-offers", "کلینیک", "پکیج‌های خدمات با تخفیف"],
+    ["magazine-article", "مجله سلامت", "مقاله با بازبینی پزشک"],
+    ["login", "ورود", "کد یک‌بار مصرف و حساب‌های نمایشی"],
+  ],
+  "پنل‌ها": [
+    ["patient-panel", "پنل بیمار", "نوبت‌ها، کیف پول و پرونده‌ها"],
+    ["doctor-panel", "پنل پزشک", "داشبورد امروز و برنامه کاری"],
+    ["doctor-consult-inbox", "صندوق مشاوره پزشک", "چت و تماس با بیماران"],
+    ["notifications", "اعلان‌ها", "پیام‌ها و تماس‌های ورودی"],
+    ["ops-dashboard", "داشبورد اپراتور", "آمار، صف تأیید و گزارش‌ها"],
+  ],
+};
+const tabs = document.getElementById("tabs"), gallery = document.getElementById("gallery");
+function showTab(name) {
+  tabs.querySelectorAll(".tab").forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+  gallery.innerHTML = SHOTS[name].map(([f, t, d]) =>
+    `<button class="card shot" data-src="images/${f}.png" data-title="${t}"><img src="images/${f}.png" alt="${t}" loading="lazy" width="1440" height="900"><div class="cap"><b>${t}</b><span>${d}</span></div></button>`).join("");
+}
+tabs.innerHTML = Object.keys(SHOTS).map((n) => `<button class="tab" role="tab" data-tab="${n}">${n}</button>`).join("");
+tabs.addEventListener("click", (e) => { const t = e.target.closest(".tab"); if (t) showTab(t.dataset.tab); });
+showTab(Object.keys(SHOTS)[0]);
+
+const lb = document.getElementById("lightbox");
+gallery.addEventListener("click", (e) => {
+  const s = e.target.closest(".shot");
+  if (!s) return;
+  document.getElementById("lb-img").src = s.dataset.src;
+  document.getElementById("lb-title").textContent = s.dataset.title;
+  lb.showModal();
+});
+lb.addEventListener("click", (e) => { if (e.target === lb) lb.close(); });
+
+// Free hosting sleeps when idle: ping the demo now so it is awake by the time the visitor clicks.
+const status = document.getElementById("status");
+const setStatus = (cls, text) => (status.innerHTML = `<span class="dot ${cls}"></span><span>${text}</span>`);
+// An image probe needs no CORS and only succeeds when the app itself answers (a host's error page is not an image).
+(() => {
+  const started = Date.now();
+  let done = false;
+  const finish = (ok) => {
+    if (done) return;
+    done = true;
+    clearTimeout(slow); clearTimeout(giveUp);
+    if (ok) setStatus("ok", Date.now() - started > 3000 ? "سرور نمایشی بیدار شد و آماده است." : "سرور نمایشی آنلاین و آماده است.");
+    else setStatus("bad", "سرور نمایشی فعلاً در دسترس نیست؛ کمی بعد دوباره امتحان کنید یا تصاویر پایین را ببینید.");
+  };
+  const slow = setTimeout(() => setStatus("pulse", "سرور نمایشی در حال بیدار شدن است؛ معمولاً کمتر از یک دقیقه…"), 3000);
+  const giveUp = setTimeout(() => finish(false), 120000);
+  const probe = new Image();
+  probe.onload = () => finish(true);
+  probe.onerror = () => finish(false);
+  probe.src = `${DEMO_URL}/favicon.ico?wake=${started}`;
+})();
+</script>
+</body>
+</html>
