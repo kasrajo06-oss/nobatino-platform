@@ -91,8 +91,15 @@ def on_appointment_confirmed(appointment_id):
         consultation=consult, is_system=True,
         text="درخواست مشاوره ثبت شد و برای پزشک ارسال شد. پاسخ پزشک در همین صفحه نمایش داده می‌شود.",
     )
+    from apps.notifications.inbox import notify
+    from apps.notifications.models import Notification
     from apps.notifications.tasks import send_sms
 
+    notify(
+        appt.doctor.user, Notification.Kind.CONSULT_REQUEST,
+        f"{'درخواست فوری: ' if consult.is_instant else 'درخواست '}{consult.get_kind_display()} از {appt.patient_name}",
+        consult.complaint[:120], f"/consult/{appt.tracking_code}",
+    )
     send_sms.delay(
         appt.doctor.user.mobile,
         f"درخواست {consult.get_kind_display()}{' فوری' if consult.is_instant else ''} جدید از {appt.patient_name}. کد {appt.tracking_code}",
@@ -125,6 +132,10 @@ def activate(consult, by_doctor_user):
 
     appt = consult.appointment
     send_sms.delay(appt.patient_mobile, f"پزشک به درخواست مشاوره {appt.tracking_code} پاسخ داد. برای ادامه وارد پنل شوید.", "consult_started")
+    from apps.notifications.inbox import notify
+    from apps.notifications.models import Notification
+
+    notify(appt.user, Notification.Kind.CONSULT_STARTED, f"{appt.provider_name} مشاوره را آغاز کرد", consult.get_kind_display(), f"/consult/{appt.tracking_code}")
     return consult
 
 
@@ -141,7 +152,15 @@ def post_message(consult, user, text="", file=None):
         activate(consult, user)
     if consult.closes_at and consult.closes_at < timezone.now():
         raise ConsultError("زمان این گفتگو به پایان رسیده است.")
-    return ConsultMessage.objects.create(consultation=consult, sender=user, from_doctor=is_doctor, text=text.strip()[:4000], file=file or "")
+    msg = ConsultMessage.objects.create(consultation=consult, sender=user, from_doctor=is_doctor, text=text.strip()[:4000], file=file or "")
+    from apps.notifications.inbox import notify
+    from apps.notifications.models import Notification
+
+    appt = consult.appointment
+    recipient, sender_name = (appt.user, appt.provider_name) if is_doctor else (appt.doctor.user, appt.patient_name)
+    preview = msg.text[:120] if msg.text else "یک فایل ارسال کرد"
+    notify(recipient, Notification.Kind.CONSULT_MESSAGE, f"پیام جدید از {sender_name}", preview, f"/consult/{appt.tracking_code}")
+    return msg
 
 
 @transaction.atomic
@@ -160,6 +179,12 @@ def close(consult, *, summary="", system=False):
         text="مشاوره به پایان رسید." + ("" if system else " می‌توانید از بخش نوبت‌های من برای پزشک نظر ثبت کنید."),
     )
     mark_attendance(consult.appointment, True)
+    from apps.notifications.inbox import notify
+    from apps.notifications.models import Notification
+
+    appt = consult.appointment
+    notify(appt.user, Notification.Kind.CONSULT_CLOSED, f"مشاوره با {appt.provider_name} به پایان رسید",
+           "جمع‌بندی پزشک را ببینید و نظر خود را ثبت کنید.", f"/consult/{appt.tracking_code}")
     return consult
 
 
@@ -189,6 +214,11 @@ def expire_overdue():
             continue
         Consultation.objects.filter(pk=consult.pk).update(state=Consultation.State.CLOSED, closed_at=now)
         ConsultMessage.objects.create(consultation=consult, is_system=True, text="پزشک در مهلت مقرر پاسخ نداد؛ مبلغ به کیف پول شما بازگشت.")
+        from apps.notifications.inbox import notify
+        from apps.notifications.models import Notification
+
+        notify(consult.appointment.user, Notification.Kind.FINANCE, "مبلغ مشاوره به کیف پول بازگشت",
+               "پزشک در مهلت مقرر پاسخ نداد.", "/panel/wallet")
         refunded += 1
     for consult in Consultation.objects.filter(state=Consultation.State.ACTIVE, closes_at__lt=now):
         close(consult, system=True)

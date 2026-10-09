@@ -132,6 +132,16 @@ class _VerifyActions:
         obj.rejection_reason = reason
         obj.save(update_fields=["verification_status", "rejection_reason", "updated_at"])
         audit(request, f"verify_{new_status}", obj, reason=reason)
+        from apps.notifications.inbox import notify_many
+        from apps.notifications.models import Notification
+
+        is_doctor = isinstance(obj, DoctorProfile)
+        users = [obj.user] if is_doctor else [s.user for s in obj.staff.select_related("user")]
+        link = "/doctor-panel/profile" if is_doctor else "/center-panel/profile"
+        if new_status == VerificationStatus.APPROVED:
+            notify_many(users, Notification.Kind.ACCOUNT, "پروفایل شما تأیید شد", "اکنون در سایت نمایش داده می‌شوید.", link)
+        elif new_status == VerificationStatus.REJECTED:
+            notify_many(users, Notification.Kind.ACCOUNT, "پروفایل شما تأیید نشد", reason, link)
         return obj
 
     @action(detail=True, methods=["post"])
@@ -247,6 +257,11 @@ class OpsReviewViewSet(viewsets.ReadOnlyModelViewSet):
         review.save(update_fields=["status", "updated_at"])
         refresh_stats_for.delay(doctor_id=review.doctor_id, center_id=review.center_id)
         audit(request, f"review_{new_status}", review)
+        if new_status == Review.Status.APPROVED and review.doctor_id:
+            from apps.notifications.inbox import notify
+            from apps.notifications.models import Notification
+
+            notify(review.doctor.user, Notification.Kind.REVIEW, f"نظر جدید ({review.rating} ستاره)", review.text[:120], "/doctor-panel/reviews")
         return Response(ReviewSerializer(review).data)
 
     @action(detail=True, methods=["post"])
@@ -278,6 +293,12 @@ class OpsSettlementViewSet(viewsets.ReadOnlyModelViewSet):
         s.processed_at = timezone.now()
         s.save()
         audit(request, f"settlement_{new_status}", s, amount=s.amount)
+        from apps.notifications.inbox import notify_many
+        from apps.notifications.models import Notification
+
+        users = [s.doctor.user] if s.doctor_id else [m.user for m in s.center.staff.select_related("user")]
+        title = f"تسویه {s.amount:,} تومان واریز شد" if new_status == Settlement.Status.PAID else "درخواست تسویه رد شد"
+        notify_many(users, Notification.Kind.FINANCE, title, s.bank_ref or s.note, "/doctor-panel/finance" if s.doctor_id else "/center-panel/finance")
         return Response(SettlementSerializer(s).data)
 
     @action(detail=True, methods=["post"])

@@ -263,6 +263,11 @@ class ReviewViewSet(viewsets.ReadOnlyModelViewSet):
         review.reply = (request.data.get("reply") or "").strip()[:2000]
         review.replied_at = timezone.now()
         review.save(update_fields=["reply", "replied_at", "updated_at"])
+        if review.reply:
+            from apps.notifications.inbox import notify
+            from apps.notifications.models import Notification
+
+            notify(review.user, Notification.Kind.REVIEW, f"{review.doctor.full_name} به نظر شما پاسخ داد", review.reply[:120], "/panel/reviews")
         return Response(ReviewSerializer(review).data)
 
 

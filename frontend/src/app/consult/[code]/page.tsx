@@ -12,6 +12,7 @@ import Modal from "@/components/ui/Modal";
 import Spinner from "@/components/ui/Spinner";
 import { ApiError, api, get, post } from "@/lib/api";
 import { STATE_TONE, type ConsultMessage, type Consultation } from "@/lib/consult";
+import { useMarkRead } from "@/lib/notifications";
 import { faDateTime, faDigits, faTime, toman } from "@/lib/format";
 
 function useCountdown(target: string | null) {
@@ -74,6 +75,13 @@ export default function ConsultRoom() {
   useEffect(() => {
     listRef.current?.scrollTo({ top: listRef.current.scrollHeight, behavior: "smooth" });
   }, [messages.length]);
+
+  // being in the room = the messages are seen: clear this room's notifications
+  const markRead = useMarkRead();
+  useEffect(() => {
+    markRead({ link: `/consult/${code}` });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [code, messages.length]);
 
   if (consult.isLoading) return <div className="grid h-[60vh] place-items-center text-brand-600"><Spinner className="size-8" /></div>;
   if (!c) return <div className="container-page py-10"><Alert tone="error">مشاوره یافت نشد یا به آن دسترسی ندارید.</Alert></div>;

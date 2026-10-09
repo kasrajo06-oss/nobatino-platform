@@ -3,6 +3,7 @@
 import { Camera, Mic, MicOff, Phone, PhoneOff, RotateCcw, ShieldAlert, Video, VideoOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { get, post } from "@/lib/api";
+import { useRingtone } from "@/lib/ringtone";
 
 type Signal = { id: number; kind: string; payload: Record<string, unknown>; created_at: string };
 export type CallState = "idle" | "preview" | "ringing-out" | "ringing-in" | "connecting" | "connected" | "failed" | "ended";
@@ -14,46 +15,6 @@ const ICE: RTCIceServer[] = (() => {
     return [{ urls: "stun:stun.l.google.com:19302" }];
   }
 })();
-
-/** Simple two-tone ring generated with WebAudio (no audio files to ship). */
-function useRingtone(active: boolean) {
-  useEffect(() => {
-    if (!active || typeof window === "undefined") return;
-    const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!Ctx) return;
-    const ctx = new Ctx();
-    let stopped = false;
-    const ring = () => {
-      if (stopped) return;
-      [0, 0.25].forEach((offset, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.frequency.value = i ? 480 : 440;
-        gain.gain.setValueAtTime(0.0001, ctx.currentTime + offset);
-        gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + offset + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + offset + 0.22);
-        osc.connect(gain).connect(ctx.destination);
-        osc.start(ctx.currentTime + offset);
-        osc.stop(ctx.currentTime + offset + 0.25);
-      });
-    };
-    ring();
-    const t = setInterval(ring, 2000);
-    const title = document.title;
-    let flip = false;
-    const tt = setInterval(() => {
-      flip = !flip;
-      document.title = flip ? "📞 تماس ورودی..." : title;
-    }, 1000);
-    return () => {
-      stopped = true;
-      clearInterval(t);
-      clearInterval(tt);
-      document.title = title;
-      ctx.close().catch(() => undefined);
-    };
-  }, [active]);
-}
 
 /**
  * 1:1 in-browser call (WebRTC). Signaling goes through the API with short polling, so it works

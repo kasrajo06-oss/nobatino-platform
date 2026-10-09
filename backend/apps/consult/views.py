@@ -142,11 +142,36 @@ class ConsultationViewSet(mixins.ListModelMixin, mixins.RetrieveModelMixin, view
             if kind == "ring" and consult.is_doctor(request.user) and consult.state == Consultation.State.WAITING:
                 services.activate(consult, request.user)
             sig = CallSignal.objects.create(consultation=consult, sender=request.user, kind=kind, payload=request.data.get("payload") or {})
+            self._notify_call(consult, request.user, kind)
             CallSignal.objects.filter(consultation=consult, created_at__lt=timezone.now() - timedelta(hours=2)).delete()
             return Response(CallSignalSerializer(sig, context={"request": request}).data, status=201)
         after = int(request.query_params.get("after") or 0)
         qs = consult.signals.filter(id__gt=after).exclude(sender=request.user)
         return Response(CallSignalSerializer(qs, many=True, context={"request": request}).data)
+
+
+    @staticmethod
+    def _notify_call(consult, sender, kind):
+        """ring -> 'incoming call' for the other side; answer/decline -> stop ringing; early hangup -> missed call."""
+        from apps.notifications.inbox import notify
+        from apps.notifications.models import Notification
+
+        appt = consult.appointment
+        sender_is_doctor = consult.is_doctor(sender)
+        other = appt.user if sender_is_doctor else appt.doctor.user
+        sender_name = appt.provider_name if sender_is_doctor else appt.patient_name
+        link = f"/consult/{appt.tracking_code}"
+        if kind == "ring":
+            label = "تماس تصویری" if consult.kind == "video" else "تماس صوتی"
+            notify(other, Notification.Kind.CALL_INCOMING, f"{sender_name} با شما تماس می‌گیرد", label, link)
+        elif kind in ("answer", "decline"):
+            # the callee picked up or declined: stop the ringing popup on all of their tabs
+            Notification.objects.filter(user=sender, kind=Notification.Kind.CALL_INCOMING, link=link, is_read=False).update(is_read=True)
+        elif kind == "hangup":
+            ringing = Notification.objects.filter(user=other, kind=Notification.Kind.CALL_INCOMING, link=link, is_read=False)
+            if ringing.exists():  # hung up before the other side answered
+                ringing.update(is_read=True)
+                notify(other, Notification.Kind.CALL_MISSED, f"تماس بی‌پاسخ از {sender_name}", "", link)
 
 
 class DoctorConsultationViewSet(ConsultationViewSet):

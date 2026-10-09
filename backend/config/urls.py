@@ -19,6 +19,7 @@ from apps.doctors import views as doctors
 from apps.geo import views as geo
 from apps.lab import views as lab
 from apps.magazine import views as magazine
+from apps.notifications import views as notifications
 from apps.ops import views as ops
 from apps.payments import views as payments
 from apps.reviews import views as reviews
@@ -60,6 +61,7 @@ me.register("appointments", scheduling.MyAppointmentViewSet, basename="my-appoin
 me.register("reviews", reviews.MyReviewViewSet, basename="my-review")
 me.register("consultations", consult.ConsultationViewSet, basename="my-consultation")
 me.register("package-orders", clinic.MyPackageOrderViewSet, basename="my-package-order")
+me.register("notifications", notifications.NotificationViewSet, basename="my-notification")
 
 doctor_router = Router()
 doctor_router.register("documents", doctor_panel.DocumentViewSet, basename="dp-document")

@@ -219,6 +219,10 @@ class ReceptionViewSet(viewsets.ReadOnlyModelViewSet):
         from apps.notifications.tasks import send_sms
 
         send_sms.delay(appt.patient_mobile, f"جواب آزمایش شما ({appt.tracking_code}) در پنل کاربری قابل مشاهده است.", "lab_result")
+        from apps.notifications.inbox import notify
+        from apps.notifications.models import Notification
+
+        notify(appt.user, Notification.Kind.LAB_RESULT, f"جواب آزمایش {appt.center.name} آماده است", f"کد پیگیری {appt.tracking_code}", "/panel/appointments?scope=past")
         return Response(AppointmentSerializer(appointment_queryset().get(pk=appt.pk)).data)
 
 

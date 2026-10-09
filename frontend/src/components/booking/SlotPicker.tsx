@@ -39,6 +39,13 @@ export default function SlotPicker({
   });
 
   if (availability.isLoading) return <div className="grid h-32 place-items-center text-brand-600"><Spinner /></div>;
+  if (availability.isError)
+    return (
+      <div className="space-y-2 rounded-xl bg-rose-50 p-4 text-center text-sm text-rose-700">
+        <p>دریافت زمان‌های خالی ممکن نشد.</p>
+        <button className="btn-outline py-1.5" onClick={() => availability.refetch()}>تلاش دوباره</button>
+      </div>
+    );
   if (!availability.data || !firstFree) return <p className="rounded-xl bg-slate-50 p-4 text-center text-sm text-muted">در حال حاضر نوبت آزادی وجود ندارد.</p>;
 
   return (

@@ -212,3 +212,52 @@ test("clinic package: buy with gateway, get voucher, doctor redeems it", async (
   await patient.goto("/panel/packages");
   await expect(patient.getByText("استفاده شده").first()).toBeVisible();
 });
+
+test("notifications: message toast + bell badge, incoming call popup on another page", async ({ browser }) => {
+  const patient = await (await browser.newContext()).newPage();
+  await login(patient, randomPatient(), "/");
+  const shortId = (await demoDoctorUrl(patient)).split("/").pop()!;
+
+  // a paid video consultation booked through the API
+  const code = await patient.evaluate(async (sid) => {
+    const days = (await (await fetch(`/api/doctors/${sid}/online-availability/`)).json()).days;
+    for (const d of days.filter((x: { free: number }) => x.free)) {
+      const slots = (await (await fetch(`/api/doctors/${sid}/online-slots/?date=${d.date}`)).json()).slots;
+      for (const s of slots) {
+        const r = await fetch("/api/me/consultations/", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ doctor: sid, kind: "video", slot: s.id, complaint: "مشاوره برای بررسی نتیجه آزمایش" }),
+        });
+        if (r.ok) return (await r.json()).appointment.tracking_code as string;
+      }
+    }
+    throw new Error("no slot");
+  }, shortId);
+  const start = await patient.evaluate(async (c) => (await fetch("/api/payments/start/", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ tracking_code: c, use_wallet: false }),
+  })).json(), code);
+  const u = new URL(start.redirect_url);
+  await patient.goto(`${u.searchParams.get("callback")}&Authority=${u.searchParams.get("authority")}&Status=OK`);
+
+  // the doctor sits on the panel home (not in the room)
+  const doctor = await (await browser.newContext()).newPage();
+  await login(doctor, "09120000001", "/doctor-panel");
+  // patient writes in the room -> doctor gets a toast and a bell badge without reloading
+  await patient.goto(`/consult/${code}`);
+  await patient.getByPlaceholder("پیام خود را بنویسید...").fill("سلام دکتر، آماده تماس هستم");
+  await patient.getByRole("button", { name: "ارسال" }).click();
+  await expect(doctor.getByTestId("notif-toast").filter({ hasText: "پیام جدید" })).toBeVisible({ timeout: 15_000 });
+  await expect(doctor.getByTestId("notif-badge")).toBeVisible();
+
+  // doctor calls from the room; patient is now on another page and gets the ringing popup
+  await patient.goto("/panel/appointments");
+  await doctor.goto(`/consult/${code}`);
+  await doctor.getByRole("button", { name: "شروع تماس" }).click();
+  const popup = patient.getByRole("alertdialog", { name: "تماس ورودی" });
+  await expect(popup).toBeVisible({ timeout: 15_000 });
+  await popup.getByRole("button", { name: "پاسخ" }).click();
+  await patient.waitForURL(new RegExp(`/consult/${code}`));
+  await patient.locator("[data-call-state]").getByRole("button", { name: "پاسخ" }).click({ timeout: 15_000 });
+  await expect(patient.locator("[data-call-state]")).toHaveAttribute("data-call-state", "connected", { timeout: 20_000 });
+  await doctor.getByRole("button", { name: "قطع تماس" }).click();
+});

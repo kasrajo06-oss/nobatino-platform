@@ -9,6 +9,8 @@ import { CenterIcon, ConditionIcon, SpecialtyIcon } from "@/lib/icons";
 import { num } from "@/lib/format";
 import type { HomeData } from "@/lib/home";
 import { useMe } from "@/lib/use-me";
+import NotificationBell from "@/components/notifications/NotificationBell";
+import NotificationWatcher from "@/components/notifications/NotificationWatcher";
 import OfferIcon from "@/components/offers/OfferIcon";
 import Logo from "./Logo";
 
@@ -100,6 +102,7 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
           ))}
         </nav>
         <div className="ms-auto flex items-center gap-2">
+          {me && <NotificationBell />}
           {me ? (
             <Link href={panelHome(me.role)} className="btn-outline py-2">
               <UserRound className="size-4" />
@@ -269,6 +272,7 @@ export default function HeaderClient({ menu }: { menu: HomeData | null }) {
           </div>
         </nav>
       )}
+      {me && <NotificationWatcher />}
     </header>
   );
 }

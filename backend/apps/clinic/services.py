@@ -70,6 +70,18 @@ def mark_paid(order: PackageOrder, amount: int):
     transaction.on_commit(lambda: send_sms.delay(
         order.buyer_mobile, f"خرید «{order.package.title}» انجام شد. کد استفاده: {order.voucher_code}", "package_paid",
     ))
+    from apps.notifications.inbox import notify, notify_many
+    from apps.notifications.models import Notification
+
+    notify(order.user, Notification.Kind.PACKAGE, f"خرید «{order.package.title}» انجام شد", f"کد استفاده: {order.voucher_code}", f"/orders/{order.pk}")
+    from apps.accounts.models import User
+
+    pkg = order.package
+    providers = [pkg.doctor.user] if pkg.doctor_id else User.objects.filter(center_memberships__center=pkg.center)
+    notify_many(
+        providers, Notification.Kind.PACKAGE, f"فروش جدید: {pkg.title}", f"خریدار: {order.buyer_name}",
+        "/doctor-panel/packages" if pkg.doctor_id else "/center-panel/packages",
+    )
     return order
 
 
@@ -143,6 +155,10 @@ def redeem(voucher_code: str, *, provider_user, doctor=None, center=None) -> Pac
     order.used_at = timezone.now()
     order.redeemed_by = provider_user
     order.save(update_fields=["status", "used_at", "redeemed_by", "updated_at"])
+    from apps.notifications.inbox import notify
+    from apps.notifications.models import Notification
+
+    notify(order.user, Notification.Kind.PACKAGE, f"از «{order.package.title}» استفاده شد", "امیدواریم از خدمت راضی باشید.", "/panel/packages")
     return order
 
 
