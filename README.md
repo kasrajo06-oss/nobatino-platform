@@ -1,119 +1,105 @@
-# پلتفرم نوبت‌دهی پزشکی
+<div dir="rtl">
 
-سامانه نوبت‌دهی اینترنتی پزشکان، مراکز درمانی و آزمایشگاه‌ها با پنل بیمار، پزشک، مرکز درمانی و اپراتور.
-نام برند از متغیر `BRAND_NAME` / `NEXT_PUBLIC_BRAND_NAME` خوانده می‌شود (پیش‌فرض: «نوبتینو»).
+# نوبتینو — پلتفرم نوبت‌دهی پزشکی و مشاوره آنلاین
 
-> داده‌های مرجع (تخصص‌ها، شهرها، بیمه‌ها، بیماری‌ها، آزمایش‌ها) در `backend/fixtures/` هستند.
-> تصاویر شهرها از Wikimedia Commons با مجوز آزاد (مشخصات در `/credits`) و آیکون‌های پزشکی از Health Icons هستند.
-> پزشکان و مراکز در محیط توسعه **ساختگی** (Faker) هستند؛ در محیط واقعی از طریق ثبت‌نام و تأیید اپراتور اضافه می‌شوند.
-> اطلاعات شخصی پزشکان از هیچ سایتی کپی نشده و نباید بشود.
+پلتفرم کامل **نوبت‌دهی اینترنتی پزشکان، مشاوره آنلاین (متنی، تلفنی، تصویری)، پذیرش آنلاین آزمایشگاه، مراکز درمانی، فروش پکیج خدمات و مجله سلامت** — با پنل بیمار، پزشک، مرکز درمانی و اپراتور.
 
-## ساختار
+> A full-stack Persian (RTL) medical booking & telehealth platform — Django REST + Next.js, PostgreSQL, Redis/Celery, WebRTC video calls, Docker deployment. Patient, doctor, clinic/lab and operator panels.
 
-```
-backend/    Django 5 + DRF  (API، پنل ادمین جنگو، Celery)
-frontend/   Next.js 15 (App Router، RTL، SSR برای سئو)
-infra/      docker-compose (dev/prod)، nginx، اسکریپت بکاپ
-```
+![صفحه اصلی](docs/images/home.png)
 
-| اپ بک‌اند | مسئولیت |
+## امکانات
+
+| | |
 |---|---|
-| `accounts` | کاربر با موبایل، ورود با کد یکبار مصرف (OTP)، JWT در کوکی httpOnly، اعضای خانواده |
-| `geo`, `catalog` | استان/شهر، تخصص/فوق‌تخصص، مدرک، بیماری/خدمت، بیمه |
-| `doctors` | پروفایل پزشک (`/doctor/{slug}/{short_id}`)، مطب‌ها، مدارک، تأیید همکاران، API پنل پزشک |
-| `centers`, `lab` | بیمارستان/کلینیک/آزمایشگاه/…، تعرفه آزمایش، پذیرش آنلاین، API پنل مرکز |
-| `scheduling` | برنامه هفتگی، مرخصی، ساخت Slot، رزرو بدون رزرو دوبل، لغو و انقضای نوبت |
-| `payments` | کیف پول، زرین‌پال (و درگاه آزمایشی)، استرداد، تسویه پزشک/مرکز |
-| `reviews` | نظر بعد از مراجعه، تأیید اپراتور، محاسبه امتیاز و محبوبیت |
-| `notifications` | پیامک (کاوه‌نگار / کنسول)، یادآوری ۲۴ و ۲ ساعته |
-| `consult` | مشاوره آنلاین متنی/تلفنی/ویدیویی و فوری، چت، تماس WebRTC، تعرفه و زمان‌های تماس پزشک |
-| `magazine` | مجله سلامت: دسته‌ها، مقالات Markdown، بازبینی علمی پزشک، پیشنهاد پزشکان مرتبط، ویرایشگر اپراتور |
-| `clinic` | «کلینیک»: پکیج خدمات تخفیف‌دار، خرید آنلاین، کد استفاده (voucher)، ثبت استفاده توسط پزشک/مرکز، استرداد |
-| `ops` | API پنل اپراتور و گزارش رویدادها (audit log) |
+| 🔎 **جستجو و نوبت‌دهی مطب** | جستجو بر اساس شهر، تخصص، بیماری و نام؛ فیلتر بیمه، جنسیت، نوبت باز؛ رزرو آنی بدون تداخل |
+| 💬 **مشاوره آنلاین** | متنی با عکس و PDF، تماس صوتی و تصویری داخل مرورگر (WebRTC)، مشاوره فوری با پزشکان آنلاین |
+| 🧪 **آزمایشگاه آنلاین** | انتخاب آزمایش یا بارگذاری نسخه، نمونه‌گیری در منزل، دریافت جواب در پنل |
+| 🏥 **مراکز درمانی** | بیمارستان، کلینیک، درمانگاه، تصویربرداری، داروخانه |
+| 🎟️ **کلینیک** | خرید آنلاین پکیج خدمات با تخفیف و کد استفاده |
+| 📰 **مجله سلامت** | مقالات با بازبینی علمی پزشک و پیشنهاد پزشکان مرتبط |
+| 🔔 **اعلان‌ها** | زنگوله اعلان، اعلان دسکتاپ، پنجره تماس ورودی، پیامک |
+| 💳 **پرداخت** | کیف پول، زرین‌پال، استرداد خودکار، تسویه پزشکان |
+| 👨‍⚕️ **پنل‌ها** | بیمار، پزشک، مرکز درمانی، اپراتور + پنل ادمین جنگو |
+| 🔐 **ورود** | فقط با موبایل و کد یکبار مصرف |
 
-## اجرای سریع بدون Docker (SQLite)
+| | |
+|---|---|
+| ![پروفایل پزشک](docs/images/doctor-profile.png) | ![مشاوره آنلاین](docs/images/telehealth.png) |
+| ![پنل پزشک](docs/images/doctor-panel.png) | ![داشبورد اپراتور](docs/images/ops-dashboard.png) |
+| ![کلینیک](docs/images/clinic-offers.png) | ![اعلان‌ها](docs/images/notifications.png) |
+
+## فناوری‌ها
+
+**بک‌اند**: Python 3.12 · Django 5.1 · Django REST Framework · PostgreSQL 16 · Redis 7 · Celery 5 · SimpleJWT
+**فرانت**: Next.js 15 · React 19 · TypeScript · Tailwind CSS 4 · TanStack Query · WebRTC
+**زیرساخت**: Docker Compose · nginx · Let's Encrypt · MinIO · coturn · GitHub Actions
+
+## اجرای سریع
 
 ```bash
 # بک‌اند
 cd backend
-python -m venv .venv && .venv/Scripts/activate      # لینوکس/مک: source .venv/bin/activate
-pip install -r requirements-dev.txt
-python manage.py migrate
-python manage.py seed_reference                       # داده‌های مرجع واقعی
-python manage.py seed_fake                            # پزشک و مرکز ساختگی برای توسعه
-python manage.py runserver 8000
+python -m venv .venv
+.venv/Scripts/python -m pip install -r requirements-dev.txt      # لینوکس/مک: .venv/bin/python
+.venv/Scripts/python manage.py migrate
+.venv/Scripts/python manage.py seed_reference
+.venv/Scripts/python manage.py seed_fake
+.venv/Scripts/python manage.py runserver 8000
 
-# فرانت‌اند (ترمینال دیگر)
+# فرانت (ترمینال دیگر)
 cd frontend
 cp .env.example .env.local
 npm install
-npm run dev                                           # http://localhost:3000
+npm run dev
 ```
 
-بدون `REDIS_URL`، کش در حافظه است و Celery به‌صورت همزمان (eager) اجرا می‌شود.
+سایت: http://localhost:3000 · مستندات API: http://localhost:8000/api/docs/
 
-### ورود با کد یکبار مصرف (OTP)
+در صفحه ورود روی یکی از **حساب‌های نمایشی** بزنید؛ در محیط توسعه کد ورود روی صفحه نمایش داده می‌شود.
 
-- **محیط توسعه/دمو** (`DEBUG=true` یا `OTP_SHOW_CODE=true`): چون سرویس پیامک وصل نیست، کد روی خود صفحه ورود نمایش داده می‌شود (کادر زرد) و با یک کلیک وارد می‌شوید. با `NEXT_PUBLIC_DEMO_MODE=true` دکمه‌های ورود سریع حساب‌های نمایشی هم نمایش داده می‌شود.
-- **محیط واقعی**: کد فقط پیامک می‌شود (`OTP_SHOW_CODE` در production همیشه خاموش است). یکی از این دو را تنظیم کنید:
-  - کاوه‌نگار: `SMS_BACKEND=apps.notifications.sms.KavenegarSmsBackend` + `KAVENEGAR_API_KEY` + قالب verify با یک توکن
-  - sms.ir: `SMS_BACKEND=apps.notifications.sms.SmsIrBackend` + `SMSIR_API_KEY` + `SMSIR_OTP_TEMPLATE_ID` (پارامتر قالب: `CODE`) + `SMSIR_LINE_NUMBER`
-- کد ۵ رقمی، اعتبار ۲ دقیقه، ارسال مجدد بعد از ۶۰ ثانیه، حداکثر ۵ تلاش اشتباه؛ کد به‌صورت هش در Redis نگهداری می‌شود.
+| نقش | موبایل |
+|---|---|
+| بیمار | `09120000003` |
+| پزشک | `09120000001` |
+| آزمایشگاه | `09120000002` |
+| اپراتور | `09120000000` |
 
-### حساب‌های نمایشی (بعد از `seed_fake`)
+اجرا با Docker، رفع اشکال و سناریوهای امتحان: [docs/03-local-setup.md](docs/03-local-setup.md)
 
-| نقش | موبایل | پنل |
-|---|---|---|
-| بیمار | 09120000003 | `/panel` |
-| پزشک | 09120000001 | `/doctor-panel` |
-| مرکز (آزمایشگاه) | 09120000002 | `/center-panel` |
-| اپراتور | 09120000000 | `/ops` |
-| مدیر کل (ادمین جنگو) | 09120000009 | `/ops` و `/admin` |
+## مستندات
 
-## اجرا با Docker (Postgres + Redis + Celery)
+| | |
+|---|---|
+| [معرفی محصول](docs/01-overview.md) | [قوانین کسب‌وکار](docs/07-business-rules.md) |
+| [معماری](docs/02-architecture.md) | [فرانت‌اند](docs/08-frontend.md) |
+| [راه‌اندازی محلی](docs/03-local-setup.md) | [راهنمای پنل‌ها](docs/09-panels-guide.md) |
+| [پیکربندی](docs/04-configuration.md) | [مشاوره آنلاین و تماس](docs/10-telehealth-and-calls.md) |
+| [مدل داده](docs/05-data-model.md) | [اعلان‌ها](docs/11-notifications.md) |
+| [مرجع API](docs/06-api-reference.md) | [امنیت](docs/12-security.md) |
+| [تست](docs/13-testing.md) | [استقرار](docs/14-deployment-operations.md) |
+| [آنلاین کردن سایت (DEPLOY)](DEPLOY.md) | [نقشه راه](docs/15-roadmap.md) |
 
-```bash
-docker compose -f infra/docker-compose.yml up --build
-docker compose -f infra/docker-compose.yml exec backend python manage.py seed_fake
+## ساختار مخزن
+
 ```
-
-## استقرار در سرور
-
-راهنمای کامل قدم‌به‌قدم (سرور، دامنه، SSL، نسخه آزمایشی بدون پیامک، عمومی کردن): **[DEPLOY.md](DEPLOY.md)**
+backend/    Django REST API، منطق کسب‌وکار، Celery، تست‌ها، داده مرجع
+frontend/   Next.js، صفحات عمومی و پنل‌ها، تست‌های E2E
+infra/      Docker Compose توسعه و production، nginx، اسکریپت‌های سرور
+docs/       مستندات
+```
 
 ## تست
 
 ```bash
-cd backend && pytest                      # منطق رزرو، پرداخت، استرداد، دسترسی نقش‌ها
-cd frontend && npx tsc --noEmit && npm run lint
-cd frontend && npx playwright test        # E2E؛ نیاز به بک‌اند (seed شده) روی 8000 و فرانت روی 3000
+cd backend && .venv/Scripts/python -m pytest      # ۴۰ تست (SQLite و PostgreSQL)
+cd frontend && npx playwright test                 # ۱۱ سناریوی E2E، شامل تماس تصویری واقعی
 ```
 
-مستندات API: `http://localhost:8000/api/docs/`
+## داده‌ها و مجوزها
 
-## قوانین کسب‌وکار پیاده‌شده
+- داده‌های مرجع (۳۱ استان، ۲۴۸ شهر، ۱۰۴ تخصص و فوق‌تخصص، ۲۸ بیمه، ۴۷ بیماری، ۴۵ آزمایش) عمومی هستند.
+- پزشکان، مراکز و بیماران نمایشی **ساختگی‌اند**؛ هیچ اطلاعات شخصی واقعی در مخزن نیست.
+- عکس شهرها از Wikimedia Commons با مجوزهای آزاد ([منابع](frontend/src/data/city-credits.json))، آیکون‌های پزشکی از [Health Icons](https://healthicons.org) (CC0)، فونت [وزیرمتن](https://github.com/rastikerdar/vazirmatn) (OFL).
 
-- رزرو هر Slot با UPDATE شرطی اتمیک انجام می‌شود؛ رزرو دوبل ممکن نیست.
-- نوبت‌های پولی ۱۰ دقیقه نگه داشته می‌شوند؛ پرداخت نشود منقضی و آزاد می‌شوند. اگر بانک بعد از انقضا تأیید کند، مبلغ به کیف پول برمی‌گردد.
-- هر بیمار در یک روز فقط یک نوبت فعال نزد یک پزشک/مرکز.
-- لغو توسط بیمار تا ۲۴ ساعت قبل: استرداد کامل به کیف پول؛ لغو توسط پزشک/مرکز/اپراتور: همیشه استرداد کامل.
-- نظر فقط بعد از ثبت «مراجعه کرد» و پس از تأیید اپراتور منتشر می‌شود.
-- پزشک/مرکز فقط پس از تأیید اپراتور در سایت نمایش داده می‌شود.
-
-## مشاوره آنلاین (فاز ۲)
-
-- **متنی**: بیمار شرح حال و سؤال را می‌نویسد و پرداخت می‌کند؛ پزشک تا ۲۴ ساعت فرصت پاسخ دارد، وگرنه مبلغ خودکار به کیف پول برمی‌گردد. پس از اولین پاسخ، گفتگو ۴۸ ساعت باز است (عکس و PDF هم ارسال می‌شود).
-- **تلفنی / ویدیویی**: روی «زمان‌های تماس» پزشک رزرو می‌شود؛ تماس داخل مرورگر با WebRTC (بدون نیاز به شماره تلفن طرفین). سیگنالینگ از طریق API انجام می‌شود و برای اینترنت ایران سرویس TURN (coturn) در `docker-compose.prod.yml` آمده است.
-- **فوری**: پزشکِ «آنلاین» (کلید در پنل پزشک + حضور در ۵ دقیقه اخیر) باید ظرف ۱۰ دقیقه بپذیرد، وگرنه استرداد خودکار.
-- پزشک در پایان «جمع‌بندی و توصیه» ثبت می‌کند و بیمار می‌تواند نظر بدهد. همه مشاوره‌ها در پنل اپراتور (پشتیبانی نوبت‌ها) هم قابل پیگیری و لغو با استرداد هستند.
-- صفحات: `/doctors/telehealth`، `/doctors/telehealth/{phone|text|video}`، اتاق مشاوره `/consult/{کد پیگیری}`، پنل پزشک `/doctor-panel/consult`، پنل بیمار `/panel/consultations`.
-
-## فاز ۳: مجله سلامت و کلینیک
-
-- **مجله** (`/mag`): مقالات با دسته‌بندی، زمان مطالعه، فهرست مطالب، بازبینی علمی توسط پزشک، اتصال به تخصص‌ها و نمایش پزشکان مرتبط برای نوبت. اپراتور از `/ops/articles` می‌نویسد و منتشر می‌کند. سه مقاله راهنمای اولیه با `python manage.py seed_magazine`.
-- **کلینیک** (`/offer`): پزشک یا مرکز از پنل خود پکیج تعریف می‌کند، اپراتور تأیید می‌کند، بیمار آنلاین می‌خرد (کیف پول یا درگاه) و کد استفاده پیامکی دریافت می‌کند؛ پزشک/مرکز با وارد کردن کد، استفاده را ثبت می‌کند. لغو قبل از استفاده = استرداد کامل به کیف پول. درآمد پکیج‌ها در تسویه پزشک/مرکز محاسبه می‌شود.
-
-## فازهای بعد
-
-- اپ موبایل (PWA)
-- اتصال تماس تلفنی واقعی (شماره مجازی/ماسک‌شده) از طریق اپراتور تلفنی، در کنار تماس اینترنتی
+</div>

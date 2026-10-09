@@ -178,6 +178,12 @@ class DoctorConsultationViewSet(ConsultationViewSet):
     permission_classes = [IsDoctor]
     as_doctor = True
 
+    def create(self, request):
+        # patients start consultations at /me/consultations; the doctor inbox is read/act only
+        from rest_framework.exceptions import MethodNotAllowed
+
+        raise MethodNotAllowed("POST")
+
 
 class ConsultServicesView(APIView):
     """Doctor sets prices / enables phone, text and video consultations."""

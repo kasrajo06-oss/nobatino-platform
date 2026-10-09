@@ -75,7 +75,15 @@ class Command(BaseCommand):
 
         call_command("seed_magazine")
         self.packages()
+        self.backdate_signups()
         self.stdout.write(self.style.SUCCESS(f"Done: {len(doctors)} doctors, {len(centers)} centers."))
+
+    def backdate_signups(self):
+        """Spread demo users' sign-up dates over the last year instead of 'today'."""
+        now = timezone.now()
+        demo = {"09120000000", "09120000001", "09120000002", "09120000003", "09120000009"}
+        for user in User.objects.exclude(mobile__in=demo).only("id"):
+            User.objects.filter(pk=user.pk).update(date_joined=now - timedelta(days=random.randint(1, 365), minutes=random.randint(0, 1440)))
 
     def packages(self):
         """Demo service packages from a few doctors and labs."""
@@ -351,6 +359,8 @@ class Command(BaseCommand):
                     user=patient, patient_name=patient.full_name, patient_national_code=patient.national_code,
                     patient_mobile=patient.mobile, start=start, price=office.booking_fee, paid_amount=office.booking_fee,
                 )
+                # booked a few days before the visit, so dashboards show a realistic history
+                Appointment.objects.filter(pk=appt.pk).update(created_at=start - timedelta(days=random.randint(1, 14)))
                 if random.random() < 0.7:
                     rating = random.choices([5, 4, 3, 2, 1], weights=[55, 25, 10, 5, 5])[0]
                     Review.objects.create(

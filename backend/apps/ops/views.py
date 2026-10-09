@@ -6,6 +6,7 @@ from django.db.models.functions import TruncDate
 from django.utils import timezone
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -164,6 +165,10 @@ class OpsDoctorViewSet(_VerifyActions, viewsets.ModelViewSet):
     serializer_class = OpsDoctorSerializer
     http_method_names = ["get", "patch", "post"]
 
+    def create(self, request, *args, **kwargs):
+        # records are created by their owners (onboarding/panels); operators only review and edit them
+        raise MethodNotAllowed("POST")
+
     def get_queryset(self):
         qs = DoctorProfile.objects.select_related("user", "primary_specialty").prefetch_related("documents").order_by("-created_at")
         p = self.request.query_params
@@ -197,6 +202,10 @@ class OpsCenterViewSet(_VerifyActions, viewsets.ModelViewSet):
     permission_classes = [IsOperator]
     serializer_class = OpsCenterSerializer
     http_method_names = ["get", "patch", "post"]
+
+    def create(self, request, *args, **kwargs):
+        # records are created by their owners (onboarding/panels); operators only review and edit them
+        raise MethodNotAllowed("POST")
 
     def get_queryset(self):
         qs = Center.objects.select_related("city").order_by("-created_at")

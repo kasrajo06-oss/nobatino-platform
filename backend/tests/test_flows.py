@@ -325,3 +325,10 @@ def test_stale_cached_first_slot_is_ignored(doctor):
     c = APIClient()
     assert c.get("/api/doctors/", {"has_free_slot": "true"}).json()["count"] == 0
     assert c.get("/api/doctors/").json()["results"][0]["first_free_slot_at"] is None
+
+
+def test_ops_cannot_create_doctors_or_centers_directly():
+    op = APIClient()
+    op.force_authenticate(User.objects.create_user("09127779999", role=Role.OPERATOR))
+    for url in ("/api/ops/doctors/", "/api/ops/centers/", "/api/ops/packages/"):
+        assert op.post(url, {}, format="json").status_code == 405

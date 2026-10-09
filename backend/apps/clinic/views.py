@@ -3,6 +3,7 @@ from django.shortcuts import get_object_or_404
 from django_filters import rest_framework as filters
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -162,6 +163,10 @@ class OpsPackageViewSet(viewsets.ModelViewSet):
     permission_classes = [IsOperator]
     serializer_class = PackageWriteSerializer
     http_method_names = ["get", "patch", "post"]
+
+    def create(self, request, *args, **kwargs):
+        # records are created by their owners (onboarding/panels); operators only review and edit them
+        raise MethodNotAllowed("POST")
 
     def get_queryset(self):
         qs = ServicePackage.objects.select_related("doctor", "center", "city").order_by("-created_at")
