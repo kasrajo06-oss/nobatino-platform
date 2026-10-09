@@ -23,3 +23,7 @@ DATABASES["default"]["CONN_MAX_AGE"] = 0
 
 # everyone shares the same few demo phone numbers: don't let one visitor's code request block the next for a minute
 OTP_RESEND_SECONDS = 5
+
+# keep HTTPS-only cookies; set JWT_COOKIE_SECURE=false only when the demo is served over plain http
+# (e.g. a Coolify sslip.io address without a certificate) — camera/microphone calls also need https
+JWT_COOKIE_SECURE = env.bool("JWT_COOKIE_SECURE", default=True)
