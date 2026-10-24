@@ -124,6 +124,9 @@ curl -fsSL https://cdn.coollabs.io/coolify/install.sh | sudo bash
 |---|---|---|
 | `DJANGO_SECRET_KEY` | یک رشته تصادفی طولانی | معمولی |
 | `NEXT_PUBLIC_SITE_URL` | همان آدرس Domains | **Build Variable** |
+| `PIP_INDEX_URL` و `NPM_REGISTRY` | فقط برای سرور داخل ایران: آدرس میرور PyPI و npm (مثلاً از ارائه‌دهنده سرور) | **Build Variable** |
+
+اگر ساخت با `ReadTimeoutError` به `files.pythonhosted.org` شکست خورد، اینترنت سرور به PyPI ضعیف است: یک بار دیگر Deploy بزنید (pip حالا تا ۱۰ بار دوباره تلاش می‌کند) یا `PIP_INDEX_URL` را روی میرور داخلی بگذارید.
 
 5. **Deploy** را بزنید. ساخت اول حدود ۱۰ دقیقه طول می‌کشد. بعد سایت روی همان آدرس `sslip.io` باز می‌شود.
 
