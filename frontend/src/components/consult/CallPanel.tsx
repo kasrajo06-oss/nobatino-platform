@@ -183,6 +183,7 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     const tick = async () => {
       try {
         const signals = await get<Signal[]>(`${base}?after=${lastId.current}`);
+        if (!alive) return; // superseded loop (StrictMode remount): don't handle signals twice
         for (const s of signals) {
           lastId.current = Math.max(lastId.current, s.id);
           const age = Date.now() - new Date(s.created_at).getTime();
@@ -217,11 +218,12 @@ export default function CallPanel({ code, video, enabled, peerName }: { code: st
     // ignore signals from earlier calls (older than a minute)
     get<Signal[]>(`${base}?after=0`)
       .then((all) => {
+        if (!alive) return;
         const old = all.filter((s) => Date.now() - new Date(s.created_at).getTime() >= 60_000);
         lastId.current = Math.max(0, ...old.map((s) => s.id));
       })
       .catch(() => undefined)
-      .finally(tick);
+      .finally(() => alive && tick());
     return () => {
       alive = false;
     };

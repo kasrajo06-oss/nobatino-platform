@@ -48,6 +48,9 @@ export default function ConsultRoom() {
   const listRef = useRef<HTMLDivElement>(null);
   const c = consult.data;
   const left = useCountdown(c?.state === "waiting" ? c.doctor_deadline : c?.state === "active" ? c.closes_at : null);
+  // the poll loop outlives renders: read the latest consult from a ref, not its stale closure
+  const latest = useRef(c);
+  latest.current = c;
 
   useEffect(() => {
     if (!c) return;
@@ -55,11 +58,17 @@ export default function ConsultRoom() {
     const poll = async () => {
       try {
         const r = await get<{ messages: ConsultMessage[]; state: string; appointment_status: string }>(`/me/consultations/${code}/messages/?after=${lastId.current}`);
+        // a superseded loop (StrictMode remount, room change) must not append: it would duplicate messages
+        if (!alive) return;
         if (r.messages.length) {
           lastId.current = r.messages[r.messages.length - 1].id;
-          setMessages((m) => [...m, ...r.messages]);
+          setMessages((m) => {
+            const known = new Set(m.map((x) => x.id));
+            return [...m, ...r.messages.filter((x) => !known.has(x.id))];
+          });
         }
-        if (r.state !== c.state || r.appointment_status !== c.appointment.status) qc.invalidateQueries({ queryKey: ["consult", code] });
+        const cur = latest.current;
+        if (cur && (r.state !== cur.state || r.appointment_status !== cur.appointment.status)) qc.invalidateQueries({ queryKey: ["consult", code] });
       } catch {
         /* keep polling */
       }
